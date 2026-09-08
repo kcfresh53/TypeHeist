@@ -854,6 +854,7 @@ body.feedback-miss #app{ animation:app-jolt .18s steps(2,end); }
   right:18px;
   display:flex;
   gap:7px;
+  align-items:center;
 }
 .audio-dock button{
   border:1px solid var(--yellow);
@@ -866,6 +867,16 @@ body.feedback-miss #app{ animation:app-jolt .18s steps(2,end); }
 }
 .audio-dock button[aria-pressed="false"]{ color:var(--cream-dim); border-color:var(--edge); box-shadow:none; }
 .audio-dock button:hover,.audio-dock button:focus-visible{ background:var(--yellow); color:var(--black); }
+.track-now{
+  max-width:260px;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+  color:var(--cream-dim);
+  font:500 .66rem/1 'JetBrains Mono',monospace;
+  text-decoration:none;
+}
+.track-now:hover,.track-now:focus-visible{ color:var(--yellow); text-decoration:underline; text-underline-offset:3px; }
 .music-credit{
   margin:30px 8px 0;
   color:var(--cream-dim);
@@ -897,6 +908,7 @@ body.feedback-miss #app{ animation:app-jolt .18s steps(2,end); }
   .type-text{ line-height:1.95; }
   .results-card{ padding:34px 22px; }
   .audio-dock{ position:relative; top:auto; right:auto; align-self:flex-end; margin:-6px 0 15px; }
+  .track-now{ display:none; }
 }
 </style>
 </head>
@@ -905,10 +917,11 @@ body.feedback-miss #app{ animation:app-jolt .18s steps(2,end); }
 <div class="slash-veil" id="slashVeil"></div>
 <div id="keyEcho" aria-hidden="true"></div>
 <div class="audio-dock" aria-label="Audio controls">
-  <button id="musicToggle" type="button" aria-pressed="true" title="Toggle menu music">♫ MUSIC ON</button>
+  <a class="track-now" id="trackNow" href="#" target="_blank" rel="noopener" aria-live="polite"></a>
+  <button id="musicToggle" type="button" aria-pressed="true" title="Toggle music">♫ MUSIC ON</button>
   <button id="sfxToggle" type="button" aria-pressed="true" title="Toggle sound effects">⌁ SFX ON</button>
 </div>
-<audio id="menuMusic" src="assets/menu-spy.mp3" preload="metadata" loop></audio>
+<audio id="menuMusic" preload="metadata"></audio>
 <input type="text" id="hiddenInput" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
 
 <div id="app">
@@ -952,7 +965,7 @@ body.feedback-miss #app{ animation:app-jolt .18s steps(2,end); }
     </div>
     <footer class="music-credit">
       ↑ ↓ ← → to select · Enter to deploy<br>
-      Menu music: <a href="https://pixabay.com/music/funk-spy-166618/" target="_blank" rel="noopener">“Spy” by Pumpupthemind</a> · <a href="https://pixabay.com/service/license-summary/" target="_blank" rel="noopener">Pixabay Content License</a>
+      Menu music: <a href="https://pixabay.com/music/crime-scene-spy-opening-scene-588498/" target="_blank" rel="noopener">“Spy Opening Scene” by Brutaldesign</a> · <a href="https://pixabay.com/service/license-summary/" target="_blank" rel="noopener">Pixabay Content License</a>
     </footer>
   </section>
 
@@ -1087,14 +1100,34 @@ function generateWordString(count){
 /* ============================================================
    AUDIO — synthesized interaction SFX + licensed menu track
 ============================================================ */
+const MUSIC_PLAYLISTS = {
+  menu: [
+    { title:'Spy Opening Scene', artist:'Brutaldesign', file:'assets/menu-spy-opening.mp3', page:'https://pixabay.com/music/crime-scene-spy-opening-scene-588498/' }
+  ],
+  practice: [
+    { title:'Lofi Jazz — Study Music', artist:'alex-morgan', file:'assets/practice-lofi-study.mp3', page:'https://pixabay.com/music/modern-jazz-lofi-jazz-study-music-564256/' },
+    { title:'Lofi Jazz Trio Sunny Cafe', artist:'alex-morgan', file:'assets/practice-sunny-cafe.mp3', page:'https://pixabay.com/music/lofi-lofi-jazz-trio-sunny-cafe-560051/' },
+    { title:'Chillhop Jazz Coffee Shop', artist:'alex-morgan', file:'assets/practice-coffee-shop.mp3', page:'https://pixabay.com/music/lofi-chillhop-jazz-coffee-shop-552792/' }
+  ],
+  other: [
+    { title:'Jazz Song Sunny Cafe Nu Jazz', artist:'alex-morgan', file:'assets/mode-sunny-cafe.mp3', page:'https://pixabay.com/music/modern-jazz-jazz-song-sunny-cafe-nu-jazz-587413/' },
+    { title:'Velvet Sway', artist:'kaazoom', file:'assets/mode-velvet-sway.mp3', page:'https://pixabay.com/music/beats-velvet-sway-smooth-1960s-lounge-jazz-with-a-hint-of-hiphop-343636/' }
+  ]
+};
+
 class AudioDirector {
-  constructor(musicEl){
+  constructor(musicEl, trackEl, playlists){
     this.musicEl = musicEl;
+    this.trackEl = trackEl;
+    this.playlists = playlists;
     this.musicEnabled = true;
     this.sfxEnabled = true;
     this.ctx = null;
     this.master = null;
-    this.musicEl.volume = 0.2;
+    this.currentContext = null;
+    this.positions = { menu:0, practice:0, other:0 };
+    this.musicEl.addEventListener('ended', () => this.nextTrack());
+    this.setContext('menu');
   }
 
   unlock(){
@@ -1116,6 +1149,32 @@ class AudioDirector {
 
   pauseMusic(){ this.musicEl.pause(); }
 
+  setContext(name){
+    if (!this.playlists[name] || (this.currentContext === name && this.musicEl.src)) return;
+    this.musicEl.pause();
+    this.currentContext = name;
+    this.loadTrack();
+  }
+
+  loadTrack(){
+    const list = this.playlists[this.currentContext];
+    const index = this.positions[this.currentContext] % list.length;
+    const track = list[index];
+    this.musicEl.src = track.file;
+    this.musicEl.volume = this.currentContext === 'menu' ? 0.2 : 0.13;
+    this.musicEl.load();
+    this.trackEl.textContent = 'NOW PLAYING · ' + track.title + ' — ' + track.artist;
+    this.trackEl.href = track.page;
+    this.trackEl.title = track.title + ' by ' + track.artist + ' on Pixabay';
+  }
+
+  nextTrack(){
+    const list = this.playlists[this.currentContext];
+    this.positions[this.currentContext] = (this.positions[this.currentContext] + 1) % list.length;
+    this.loadTrack();
+    this.playMusic();
+  }
+
   tone(freq, duration = .04, type = 'square', volume = .1, delay = 0, endFreq = null){
     if (!this.sfxEnabled || !this.ctx || !this.master) return;
     const now = this.ctx.currentTime + delay;
@@ -1132,7 +1191,7 @@ class AudioDirector {
     osc.stop(now + duration + .02);
   }
 
-  noise(duration = .035, volume = .05, delay = 0){
+  noise(duration = .035, volume = .05, delay = 0, highpass = 0){
     if (!this.sfxEnabled || !this.ctx || !this.master) return;
     const length = Math.max(1, Math.floor(this.ctx.sampleRate * duration));
     const buffer = this.ctx.createBuffer(1, length, this.ctx.sampleRate);
@@ -1144,20 +1203,32 @@ class AudioDirector {
     source.buffer = buffer;
     gain.gain.setValueAtTime(volume, now);
     gain.gain.exponentialRampToValueAtTime(.0001, now + duration);
-    source.connect(gain);
+    if (highpass){
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'highpass';
+      filter.frequency.value = highpass;
+      source.connect(filter);
+      filter.connect(gain);
+    } else {
+      source.connect(gain);
+    }
     gain.connect(this.master);
     source.start(now);
   }
 
   key(success, strong){
-    if (!success){
-      this.tone(115, .11, 'sawtooth', .14, 0, 62);
-      this.noise(.07, .08);
-      return;
+    // Layer a crisp metal snap, key-lever thud, and optional carriage-like spacebar clack.
+    const jitter = Math.random() * 120;
+    this.noise(.018, .19, 0, 1650);
+    this.tone(1320 + jitter, .014, 'square', .045);
+    this.tone(94 + jitter * .08, .032, 'triangle', strong ? .09 : .055, 0, 72);
+    if (strong){
+      this.noise(.035, .14, .018, 800);
+      this.tone(620, .028, 'square', .05, .018, 410);
     }
-    const pitch = 520 + Math.random() * 110;
-    this.tone(pitch, strong ? .055 : .028, 'square', strong ? .11 : .065);
-    this.noise(strong ? .045 : .022, strong ? .055 : .028);
+    if (!success){
+      this.tone(108, .09, 'sawtooth', .1, .012, 58);
+    }
   }
 
   ui(kind){
@@ -1595,7 +1666,11 @@ class App {
     this.hiddenInput = document.getElementById('hiddenInput');
     this.slashVeil = document.getElementById('slashVeil');
     this.keyEcho = document.getElementById('keyEcho');
-    this.audio = new AudioDirector(document.getElementById('menuMusic'));
+    this.audio = new AudioDirector(
+      document.getElementById('menuMusic'),
+      document.getElementById('trackNow'),
+      MUSIC_PLAYLISTS
+    );
 
     this.screens = {
       menu: document.getElementById('screen-menu'),
@@ -1656,7 +1731,7 @@ class App {
       this.audio.musicEnabled = !this.audio.musicEnabled;
       musicBtn.setAttribute('aria-pressed', String(this.audio.musicEnabled));
       musicBtn.textContent = this.audio.musicEnabled ? '♫ MUSIC ON' : '♫ MUSIC OFF';
-      if (this.audio.musicEnabled && !this.currentMode) this.audio.playMusic();
+      if (this.audio.musicEnabled) this.audio.playMusic();
       else this.audio.pauseMusic();
     });
 
@@ -1739,6 +1814,7 @@ class App {
     this.currentEngine = null;
     this.currentMode = null;
     this.audio.ui('back');
+    this.audio.setContext('menu');
     this.showScreen('menu');
     setTimeout(() => this.audio.playMusic(), 170);
   }
@@ -1790,7 +1866,8 @@ class App {
     this.currentMode = mode;
     this.audio.unlock();
     this.audio.ui('select');
-    this.audio.pauseMusic();
+    this.audio.setContext(mode === 'free' ? 'practice' : 'other');
+    this.audio.playMusic();
 
     if (mode === 'attack'){
       this.startAttackMode();
@@ -2028,7 +2105,7 @@ class App {
 
     document.addEventListener('pointerdown', (e) => {
       this.audio.unlock();
-      if (!this.currentMode) this.audio.playMusic();
+      this.audio.playMusic();
       if (e.target.closest('button')){
         if (navigator.vibrate) navigator.vibrate(8);
         if (!e.target.closest('.mode-card')) this.audio.ui('tap');
@@ -2037,7 +2114,7 @@ class App {
 
     document.addEventListener('keydown', () => {
       this.audio.unlock();
-      if (!this.currentMode) this.audio.playMusic();
+      this.audio.playMusic();
     }, { capture:true });
   }
 }

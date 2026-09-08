@@ -1,10 +1,30 @@
-TYPE HEIST MENU MUSIC
+TYPE HEIST MUSIC CREDITS
 
-Track: Spy
-Artist: Pumpupthemind
-Source: https://pixabay.com/music/funk-spy-166618/
-License: Pixabay Content License
-License summary: https://pixabay.com/service/license-summary/
+All tracks are sourced from Pixabay and used under the Pixabay Content License:
+https://pixabay.com/service/license-summary/
+
+MENU
+
+Spy Opening Scene — Brutaldesign
+https://pixabay.com/music/crime-scene-spy-opening-scene-588498/
+
+FREE TYPE / PRACTICE
+
+Lofi Jazz - Study Music — alex-morgan
+https://pixabay.com/music/modern-jazz-lofi-jazz-study-music-564256/
+
+Lofi Jazz Trio Sunny Cafe — alex-morgan
+https://pixabay.com/music/lofi-lofi-jazz-trio-sunny-cafe-560051/
+
+Chillhop Jazz Coffee Shop — alex-morgan
+https://pixabay.com/music/lofi-chillhop-jazz-coffee-shop-552792/
+
+SPEED / ACCURACY / WORD ATTACK
+
+Jazz Song Sunny Cafe Nu Jazz — alex-morgan
+https://pixabay.com/music/modern-jazz-jazz-song-sunny-cafe-nu-jazz-587413/
+
+Velvet Sway - Smooth 1960s Lounge Jazz With A Hint of Hiphop — kaazoom
+https://pixabay.com/music/beats-velvet-sway-smooth-1960s-lounge-jazz-with-a-hint-of-hiphop-343636/
+
 Downloaded: 2026-09-08
-
-The in-game interface includes this attribution as requested by the artist.
