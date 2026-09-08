@@ -1,0 +1,2050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TYPE HEIST // Phantom Typist Training</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Bowlby+One+SC&family=Oswald:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   TOKENS
+============================================================ */
+:root{
+  --black:      #070705;
+  --bg:         #0d0d0a;
+  --panel:      #161610;
+  --panel-2:    #202017;
+  --edge:       #4b4a24;
+  --yellow:     #ffd400;
+  --yellow-hi:  #fff06a;
+  --yellow-dim: #a98d00;
+  --amber:      #ff7a00;
+  --amber-hi:   #ff9b22;
+  --cream:      #fffbe8;
+  --cream-dim:  #b9b49a;
+  --shadow-hard: 9px 9px 0 var(--black);
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+}
+
+*{ box-sizing: border-box; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  background:
+    linear-gradient(118deg, transparent 0 70%, rgba(255,212,0,.08) 70% 70.7%, transparent 70.7%),
+    var(--bg);
+  color: var(--cream);
+  font-family:'Oswald', sans-serif;
+  overflow-x:hidden;
+  min-height:100vh;
+  position:relative;
+}
+
+/* halftone texture, signature P5 grain — used sparingly, fixed & subtle */
+body::before{
+  content:'';
+  position:fixed; inset:0;
+  pointer-events:none;
+  z-index:0;
+  background-image:
+    radial-gradient(circle, rgba(255,212,0,.24) 1px, transparent 1.5px),
+    linear-gradient(110deg, transparent 0 48%, rgba(255,212,0,.025) 48% 52%, transparent 52%);
+  background-size: 6px 6px, 100% 100%;
+  opacity:.5;
+}
+
+h1,h2,h3{ font-family:'Bowlby One SC','Anton',sans-serif; letter-spacing:.5px; margin:0; }
+.mono{ font-family:'JetBrains Mono', monospace; }
+
+button{ font-family:'Oswald', sans-serif; cursor:pointer; }
+button:focus-visible, .focusable:focus-visible{
+  outline: 3px solid var(--yellow-hi);
+  outline-offset: 2px;
+}
+
+::selection{ background: var(--yellow); color: var(--black); }
+
+/* ============================================================
+   APP SHELL
+============================================================ */
+#app{
+  position:relative;
+  z-index:1;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding: 34px 24px 70px;
+}
+
+.screen{ width:100%; max-width:1120px; }
+.hidden{ display:none !important; }
+
+/* the signature slash transition sweeps across on screen change */
+.slash-veil{
+  position:fixed; inset:0;
+  z-index:50;
+  pointer-events:none;
+  background: linear-gradient(100deg, transparent 45%, var(--yellow) 47%, var(--yellow-hi) 50%, var(--yellow) 53%, transparent 55%);
+  transform: translateX(-140%);
+}
+.slash-veil.run{ animation: slash-sweep 0.55s cubic-bezier(.7,0,.3,1); }
+@keyframes slash-sweep{
+  0%{ transform: translateX(-140%); }
+  100%{ transform: translateX(140%); }
+}
+
+/* ============================================================
+   MENU SCREEN
+============================================================ */
+.menu-header{
+  position:relative;
+  padding: 26px 34px 32px;
+  margin-bottom: 28px;
+  background: linear-gradient(112deg, var(--yellow) 0 36%, var(--panel) 36.2% 100%);
+  clip-path: polygon(0 0, 96% 0, 100% 28%, 96% 100%, 2% 93%);
+  box-shadow: var(--shadow-hard);
+  border-left: 10px solid var(--cream);
+  transform: rotate(-.6deg);
+}
+.menu-header .eyebrow{
+  font-family:'JetBrains Mono', monospace;
+  color: var(--black);
+  font-size: 0.8rem;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+}
+.menu-header h1{
+  font-size: clamp(3.7rem, 10vw, 7.8rem);
+  color: var(--cream);
+  line-height: 0.95;
+  text-shadow: 5px 5px 0 var(--black), 8px 8px 0 var(--yellow);
+  transform:skew(-7deg);
+}
+.menu-header h1 span{ color: var(--black); text-shadow:none; }
+.menu-header p{
+  margin: 14px 0 0 39%;
+  color: var(--cream);
+  font-size: 1rem;
+  max-width: 48ch;
+}
+
+.mode-grid{
+  display:grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px 18px;
+  transform:rotate(.35deg);
+}
+@media (max-width: 640px){ .mode-grid{ grid-template-columns: 1fr; } }
+
+.mode-card{
+  position:relative;
+  background: var(--panel);
+  border: 2px solid var(--edge);
+  clip-path: polygon(3% 0, 100% 5%, 96% 100%, 0 91%);
+  padding: 25px 28px 29px;
+  text-align:left;
+  color: var(--cream);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  overflow:hidden;
+  box-shadow: 7px 7px 0 var(--black);
+  isolation:isolate;
+}
+.mode-card::after{
+  content:'';
+  position:absolute;
+  left:0; right:0; bottom:0;
+  height:8px;
+  background:var(--black);
+  transform:scaleX(.18);
+  transform-origin:right;
+  transition:transform .18s cubic-bezier(.2,.9,.2,1);
+  z-index:-1;
+}
+.mode-card::before{
+  content: attr(data-num);
+  position:absolute;
+  top:10px; right:16px;
+  font-family:'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--yellow-dim);
+}
+.mode-card .tag{
+  font-family:'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 3px;
+  color: var(--yellow);
+  text-transform: uppercase;
+}
+.mode-card h3{
+  font-size: 2.25rem;
+  margin-top: 6px;
+  color: var(--cream);
+}
+.mode-card p{
+  margin-top: 8px;
+  font-size: 0.88rem;
+  color: var(--cream-dim);
+  line-height: 1.5;
+}
+.mode-card .enter{
+  margin-top: 16px;
+  font-family:'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  color: var(--yellow-dim);
+  letter-spacing: 2px;
+}
+.mode-card:hover, .mode-card:focus-visible{
+  transform: translate(-6px,-6px) rotate(-1deg) scale(1.015);
+  box-shadow: 13px 13px 0 var(--yellow);
+  border-color: var(--yellow);
+}
+.mode-card:hover::after,.mode-card:focus-visible::after,.mode-card.menu-selected::after{ transform:scaleX(1); }
+.mode-card:hover .enter{ color: var(--yellow-hi); }
+.mode-card:hover h3{ color: var(--yellow-hi); }
+
+@media (max-width:640px){
+  #app{ padding:20px 14px 50px; }
+  .menu-header{ padding:22px 20px 28px; background:linear-gradient(160deg,var(--yellow) 0 42%,var(--panel) 42.3%); }
+  .menu-header p{ margin:22px 0 0; }
+  .menu-header h1{ font-size:clamp(3rem,18vw,5rem); }
+}
+
+/* ============================================================
+   GAME SCREEN — shared
+============================================================ */
+.game-topbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.back-btn{
+  background: var(--panel);
+  border: 1px solid var(--edge);
+  color: var(--cream);
+  padding: 9px 16px 9px 12px;
+  clip-path: polygon(12% 0, 100% 0, 100% 100%, 0 100%);
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  display:flex; align-items:center; gap:6px;
+}
+.back-btn:hover{ color: var(--yellow-hi); border-color: var(--yellow); }
+
+.mode-title{
+  font-size: 1.5rem;
+  color: var(--yellow);
+  display:flex; align-items:center; gap:10px;
+}
+
+.stat-row{
+  display:flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.stat-chip{
+  background: var(--panel-2);
+  border: 1px solid var(--edge);
+  padding: 8px 14px;
+  clip-path: polygon(10% 0, 100% 0, 90% 100%, 0% 100%);
+  text-align:center;
+  min-width: 76px;
+}
+.stat-chip .v{ font-family:'JetBrains Mono', monospace; font-size:1.15rem; color: var(--yellow-hi); font-weight:700; }
+.stat-chip .l{ font-size:0.62rem; letter-spacing:2px; color: var(--cream-dim); text-transform:uppercase; }
+
+.type-panel{
+  background: var(--panel);
+  border: 1px solid var(--edge);
+  clip-path: polygon(0 0, 100% 0, 100% 92%, 96% 100%, 0 100%);
+  padding: 28px 30px;
+  box-shadow: var(--shadow-hard);
+  position:relative;
+}
+
+.type-text{
+  font-family:'JetBrains Mono', monospace;
+  font-size: 1.35rem;
+  line-height: 2.1;
+  letter-spacing: 0.5px;
+  max-height: 8.4em;
+  overflow:hidden;
+  word-break: normal;
+  overflow-wrap: normal;
+  white-space: normal;
+}
+.type-text .ch{ color: var(--cream-dim); border-bottom: 2px solid transparent; }
+.type-text .ch.correct{ color: var(--cream); }
+.type-text .ch.incorrect{ color: var(--amber-hi); background: rgba(192,106,36,0.18); border-bottom-color: var(--amber); }
+.type-text .ch.current{ background: var(--yellow); color: var(--black); animation: caret-blink 1s step-end infinite; }
+@keyframes caret-blink{ 50%{ background: var(--yellow-dim); } }
+
+/* glitch-wipe: plays over the panel the instant a completed word batch is swapped for the next */
+.type-panel::before, .type-panel::after{
+  content:'';
+  position:absolute; left:0; right:0;
+  height: 8px;
+  opacity:0;
+  pointer-events:none;
+}
+.type-panel::before{ background: var(--yellow); }
+.type-panel::after{ background: var(--amber); }
+.type-panel.glitching::before{ top: 24%; animation: glitch-bar-a 0.45s steps(1,end); }
+.type-panel.glitching::after{ top: 63%; animation: glitch-bar-b 0.45s steps(1,end) 0.04s; }
+@keyframes glitch-bar-a{
+  0%{ opacity:0; transform: translateX(0); }
+  18%{ opacity:0.85; transform: translateX(-18px); }
+  36%{ opacity:0; transform: translateX(12px); }
+  58%{ opacity:0.7; transform: translateX(-8px); }
+  100%{ opacity:0; transform: translateX(0); }
+}
+@keyframes glitch-bar-b{
+  0%{ opacity:0; transform: translateX(0); }
+  22%{ opacity:0.8; transform: translateX(14px); }
+  46%{ opacity:0; transform: translateX(-10px); }
+  70%{ opacity:0.6; transform: translateX(6px); }
+  100%{ opacity:0; transform: translateX(0); }
+}
+.type-panel.glitching .type-text{
+  animation: text-glitch-in 0.45s steps(2,end);
+}
+@keyframes text-glitch-in{
+  0%{ opacity:0.1; transform: translateX(8px); }
+  15%{ opacity:0.9; transform: translateX(-10px); }
+  30%{ opacity:0.2; transform: translateX(6px); }
+  45%{ opacity:1; transform: translateX(-4px); }
+  60%{ opacity:0.35; transform: translateX(3px); }
+  100%{ opacity:1; transform: translateX(0); }
+}
+
+.hint-row{
+  margin-top: 18px;
+  display:flex; justify-content:space-between; align-items:center;
+  font-size: 0.78rem;
+  color: var(--cream-dim);
+  font-family:'JetBrains Mono', monospace;
+}
+.pill-btn{
+  background: transparent;
+  border: 1px solid var(--edge);
+  color: var(--cream-dim);
+  padding: 5px 12px;
+  font-size: 0.75rem;
+  letter-spacing:1px;
+}
+.pill-btn.active{ border-color: var(--yellow); color: var(--yellow-hi); }
+.pill-group{ display:flex; gap:6px; }
+
+.reset-btn{
+  background: var(--yellow-dim);
+  color: var(--black);
+  border:none;
+  font-weight:700;
+  padding: 8px 16px;
+  clip-path: polygon(8% 0, 100% 0, 92% 100%, 0 100%);
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+}
+.reset-btn:hover{ background: var(--yellow); }
+
+#hiddenInput{
+  position:fixed;
+  top:0; left:0;
+  width:1px; height:1px;
+  padding:0;
+  margin:0;
+  border:none;
+  outline:none;
+  background:transparent;
+  color:transparent;
+  caret-color:transparent;
+  opacity:0;
+  pointer-events:none;
+  z-index:-1;
+}
+
+/* ============================================================
+   RESULTS OVERLAY
+============================================================ */
+.results-overlay{
+  position:fixed; inset:0;
+  background: rgba(11,10,8,0.92);
+  display:flex; align-items:center; justify-content:center;
+  z-index:60;
+}
+.results-card{
+  background: var(--panel);
+  border: 2px solid var(--yellow);
+  clip-path: polygon(0 8%, 8% 0, 100% 0, 100% 92%, 92% 100%, 0 100%);
+  padding: 40px 46px;
+  text-align:center;
+  min-width: 320px;
+  box-shadow: 10px 10px 0 var(--black);
+  animation: card-in 0.4s cubic-bezier(.2,1.4,.4,1);
+}
+@keyframes card-in{
+  0%{ transform: scale(0.7) rotate(-3deg); opacity:0; }
+  100%{ transform: scale(1) rotate(0); opacity:1; }
+}
+.results-card .eyebrow{
+  font-family:'JetBrains Mono', monospace;
+  color: var(--amber-hi);
+  letter-spacing: 4px;
+  font-size: 0.8rem;
+}
+.results-card h2{ font-size: 2.6rem; color: var(--cream); margin: 6px 0 18px; }
+.rank-badge{
+  font-family:'Anton', sans-serif;
+  font-size: 4rem;
+  color: var(--black);
+  background: var(--yellow);
+  width: 96px; height: 96px;
+  display:flex; align-items:center; justify-content:center;
+  margin: 0 auto 20px;
+  clip-path: polygon(20% 0,100% 0,80% 100%,0 100%);
+  box-shadow: 5px 5px 0 var(--black);
+}
+.results-stats{
+  display:flex; gap:18px; justify-content:center; margin: 10px 0 26px;
+  flex-wrap:wrap;
+}
+.results-stats div{ min-width: 90px; }
+.results-stats .v{ font-family:'JetBrains Mono', monospace; font-size:1.6rem; color: var(--yellow-hi); }
+.results-stats .l{ font-size:0.68rem; letter-spacing:2px; color: var(--cream-dim); text-transform:uppercase; }
+.results-actions{ display:flex; gap:12px; justify-content:center; }
+.results-actions button{
+  padding: 12px 22px;
+  border:none;
+  font-weight:600;
+  letter-spacing:1px;
+  clip-path: polygon(10% 0,100% 0,90% 100%,0 100%);
+}
+.btn-primary{ background: var(--yellow); color: var(--black); }
+.btn-primary:hover{ background: var(--yellow-hi); }
+.btn-secondary{ background: var(--panel-2); color: var(--cream); border:1px solid var(--edge) !important; }
+.btn-secondary:hover{ color: var(--yellow-hi); border-color: var(--yellow) !important; }
+
+/* ============================================================
+   ATTACK MODE
+============================================================ */
+.attack-wrap{
+  background: var(--panel);
+  border: 1px solid var(--edge);
+  clip-path: polygon(0 0, 100% 0, 100% 94%, 97% 100%, 0 100%);
+  box-shadow: var(--shadow-hard);
+  padding: 18px;
+}
+.health-row{
+  display:flex; align-items:center; gap:14px;
+  margin-bottom:14px;
+}
+.health-label{
+  font-family:'JetBrains Mono', monospace;
+  font-size:0.72rem;
+  letter-spacing:2px;
+  color: var(--cream-dim);
+  white-space:nowrap;
+}
+.health-bar-outer{
+  flex:1;
+  height: 20px;
+  background: var(--black);
+  clip-path: polygon(2% 0, 100% 0, 98% 100%, 0 100%);
+  border: 1px solid var(--edge);
+  overflow:hidden;
+}
+.health-bar-fill{
+  height:100%;
+  width:100%;
+  background: linear-gradient(90deg, var(--yellow-dim), var(--yellow));
+  transition: width 0.25s ease, background 0.25s ease;
+}
+.health-bar-fill.danger{ background: linear-gradient(90deg, #7a3a10, var(--amber-hi)); }
+
+.playfield{
+  position:relative;
+  height: 420px;
+  background:
+    repeating-linear-gradient(180deg, transparent 0 38px, rgba(217,178,60,0.03) 38px 39px),
+    var(--black);
+  overflow:hidden;
+  border: 1px solid var(--edge);
+}
+.playfield .baseline{
+  position:absolute;
+  left:0; right:0; bottom: 46px;
+  height:2px;
+  background: var(--yellow-dim);
+}
+.playfield .player{
+  position:absolute;
+  bottom: 6px; left:50%;
+  transform: translateX(-50%);
+  width: 46px; height:32px;
+  background: var(--yellow);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  box-shadow: 0 0 14px rgba(217,178,60,0.5);
+}
+.playfield .player.hit{ animation: player-shake 0.3s; }
+@keyframes player-shake{
+  0%,100%{ transform: translateX(-50%); }
+  25%{ transform: translateX(-58%); }
+  75%{ transform: translateX(-42%); }
+}
+
+.falling-word{
+  position:absolute;
+  top: -30px;
+  font-family:'JetBrains Mono', monospace;
+  font-size: 1.05rem;
+  padding: 4px 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--edge);
+  clip-path: polygon(8% 0,100% 0,92% 100%,0 100%);
+  white-space:nowrap;
+  color: var(--cream-dim);
+}
+.falling-word .typed{ color: var(--yellow-hi); font-weight:700; }
+.falling-word.targeted{ border-color: var(--yellow); box-shadow: 0 0 10px rgba(217,178,60,0.35); }
+.falling-word.destroyed{ animation: word-burst 0.25s forwards; }
+@keyframes word-burst{
+  0%{ opacity:1; transform: scale(1); }
+  100%{ opacity:0; transform: scale(1.6); }
+}
+.falling-word.missed{ animation: word-fade 0.2s forwards; border-color: var(--amber); }
+@keyframes word-fade{
+  0%{ opacity:1; }
+  100%{ opacity:0; transform: translateY(6px); }
+}
+
+.attack-footer{
+  display:flex; justify-content:space-between; align-items:center;
+  margin-top: 14px;
+  font-family:'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  color: var(--cream-dim);
+}
+.combo-flash{ color: var(--yellow-hi); }
+
+.start-overlay{
+  position:absolute; inset:0;
+  background: rgba(11,10,8,0.88);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap: 14px;
+  text-align:center;
+  padding: 20px;
+}
+.start-overlay h3{ font-size:1.6rem; color:var(--yellow); }
+.start-overlay p{ color: var(--cream-dim); font-size:0.85rem; max-width: 40ch; }
+.start-overlay button{
+  background: var(--yellow); color: var(--black); border:none;
+  padding: 12px 26px; font-weight:700; letter-spacing:1px;
+  clip-path: polygon(8% 0,100% 0,92% 100%,0 100%);
+}
+.start-overlay button:hover{ background: var(--yellow-hi); }
+
+/* ============================================================
+   2026 VISUAL SYSTEM — kinetic yellow dossier
+============================================================ */
+body::after{
+  content:'TYPE HEIST  /  TYPE HEIST  /  TYPE HEIST  /  TYPE HEIST';
+  position:fixed;
+  z-index:0;
+  left:-4vw;
+  right:-4vw;
+  bottom:4vh;
+  overflow:hidden;
+  color:rgba(255,212,0,.035);
+  font:400 clamp(5rem,15vw,13rem)/.75 'Anton',sans-serif;
+  letter-spacing:-.04em;
+  white-space:nowrap;
+  transform:rotate(-5deg);
+  pointer-events:none;
+}
+
+.screen{ animation:screen-slam .38s cubic-bezier(.17,.89,.32,1.28) both; }
+@keyframes screen-slam{
+  0%{ opacity:0; transform:translate(28px,-10px) rotate(1deg) scale(.985); filter:blur(4px); }
+  100%{ opacity:1; transform:none; filter:none; }
+}
+
+.slash-veil{
+  background:
+    linear-gradient(103deg,transparent 0 38%,var(--black) 38.2% 39.5%,var(--yellow) 39.7% 58%,var(--cream) 58.2% 59%,transparent 59.2%);
+}
+.slash-veil.run{ animation-duration:.48s; }
+
+.menu-header::before{
+  content:'CONFIDENTIAL / 04 TRIALS';
+  position:absolute;
+  right:4%; top:14px;
+  color:var(--yellow);
+  font:700 .72rem/1 'JetBrains Mono',monospace;
+  letter-spacing:.18em;
+  padding:7px 10px;
+  border:1px solid currentColor;
+  transform:rotate(2deg);
+}
+.menu-header::after{
+  content:'盗';
+  position:absolute;
+  right:5%; bottom:-22px;
+  color:rgba(255,212,0,.09);
+  font:400 9rem/1 'Anton',sans-serif;
+  transform:rotate(12deg);
+}
+.menu-header .eyebrow{
+  display:inline-block;
+  background:var(--black);
+  color:var(--yellow);
+  padding:7px 12px;
+  transform:rotate(-2deg);
+}
+.menu-header h1{ position:relative; z-index:1; margin-top:10px; }
+
+.mode-card:nth-child(2n){ transform:translateY(10px) rotate(-.8deg); }
+.mode-card:nth-child(3){ clip-path:polygon(0 5%,97% 0,100% 92%,4% 100%); }
+.mode-card .tag{ font-weight:700; }
+.mode-card .enter{
+  display:inline-block;
+  padding:6px 9px;
+  border-left:5px solid var(--yellow);
+  color:var(--cream);
+  background:var(--black);
+  transition:transform .16s ease,color .16s ease;
+}
+.mode-card:hover .tag,.mode-card:focus-visible .tag{ color:var(--black); }
+.mode-card:hover p,.mode-card:focus-visible p{ color:var(--black); }
+.mode-card:hover h3,.mode-card:focus-visible h3{ color:var(--black); text-shadow:2px 2px 0 var(--cream); }
+.mode-card:hover .enter,.mode-card:focus-visible .enter{ color:var(--yellow); transform:translateX(8px) skew(-6deg); }
+.mode-card:hover,.mode-card:focus-visible,.mode-card.menu-selected{
+  background:var(--yellow);
+  color:var(--black);
+}
+.mode-card.menu-selected{
+  transform:translate(-6px,-6px) rotate(-1deg) scale(1.015);
+  box-shadow:13px 13px 0 var(--yellow);
+  border-color:var(--yellow);
+}
+.mode-card.menu-selected .tag,.mode-card.menu-selected p,.mode-card.menu-selected h3,.mode-card.menu-selected::before{ color:var(--black); }
+.mode-card.menu-selected h3{ text-shadow:2px 2px 0 var(--cream); }
+.mode-card.menu-selected .enter{ color:var(--yellow); transform:translateX(8px) skew(-6deg); }
+.mode-card:hover::before,.mode-card:focus-visible::before{ color:var(--black); }
+.mode-card:active{ transform:translate(3px,3px) scale(.985) !important; box-shadow:3px 3px 0 var(--yellow) !important; transition-duration:.04s; }
+
+.game-topbar{
+  position:relative;
+  margin-bottom:28px;
+  padding:14px 18px;
+  background:var(--yellow);
+  color:var(--black);
+  clip-path:polygon(2% 0,100% 7%,97% 100%,0 88%);
+  box-shadow:8px 8px 0 var(--black);
+}
+.game-topbar::after{
+  content:'';
+  position:absolute;
+  left:17%; right:35%; bottom:5px;
+  height:4px;
+  background:var(--black);
+  transform:skew(-25deg);
+}
+.mode-title{ color:var(--black); font-size:clamp(1.7rem,4vw,2.7rem); transform:skew(-8deg); text-shadow:2px 2px 0 var(--cream); }
+.back-btn{
+  background:var(--black);
+  border:2px solid var(--black);
+  color:var(--yellow);
+  font-weight:700;
+  box-shadow:4px 4px 0 var(--cream);
+  transition:transform .12s ease,box-shadow .12s ease;
+}
+.back-btn:hover{ color:var(--cream); border-color:var(--black); transform:translate(-2px,-2px); box-shadow:7px 7px 0 var(--cream); }
+.back-btn:active{ transform:translate(3px,3px); box-shadow:1px 1px 0 var(--cream); }
+
+.stat-row{ position:relative; z-index:2; }
+.stat-chip{
+  background:var(--black);
+  border:0;
+  min-width:86px;
+  padding:9px 16px;
+  box-shadow:3px 3px 0 var(--cream);
+  transform:skew(-5deg);
+}
+.stat-chip .v{ color:var(--yellow); font-size:1.25rem; }
+.stat-chip .l{ color:var(--cream); }
+
+.type-panel{
+  border:3px solid var(--yellow);
+  clip-path:polygon(1.5% 0,98% 2%,100% 90%,96% 100%,2% 97%,0 10%);
+  padding:48px 46px 36px;
+  box-shadow:12px 12px 0 var(--black),16px 16px 0 var(--yellow);
+  background:
+    linear-gradient(105deg,rgba(255,212,0,.05) 0 17%,transparent 17.2%),
+    var(--panel);
+  transition:transform .1s ease,filter .1s ease;
+}
+.type-panel::after{ height:12px; }
+.type-panel::before{ height:10px; }
+.type-panel.input-hit{ animation:panel-hit .15s cubic-bezier(.2,.8,.2,1); }
+.type-panel.input-miss{ animation:panel-miss .22s steps(2,end); filter:saturate(1.5); }
+@keyframes panel-hit{ 0%{ transform:scale(1); } 45%{ transform:scale(1.008) translateY(-2px); } 100%{ transform:scale(1); } }
+@keyframes panel-miss{ 0%,100%{ transform:none; } 25%{ transform:translateX(-7px) skew(-1deg); } 70%{ transform:translateX(5px) skew(1deg); } }
+
+.type-text{ font-size:clamp(1.05rem,2.3vw,1.5rem); line-height:2.15; }
+.type-text .ch{ transition:color .08s ease,background .08s ease,transform .08s ease; display:inline; }
+.type-text .ch.correct{ color:var(--cream); text-shadow:0 0 8px rgba(255,240,106,.18); }
+.type-text .ch.incorrect{ color:var(--black); background:var(--amber-hi); box-shadow:0 3px 0 var(--amber); }
+.type-text .ch.current{ background:var(--yellow); color:var(--black); box-shadow:3px 3px 0 var(--cream); }
+
+.hint-row{
+  margin-top:24px;
+  border-top:1px solid var(--edge);
+  padding-top:15px;
+  color:var(--cream);
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+.pill-btn,.reset-btn{
+  min-height:34px;
+  transition:transform .1s ease,box-shadow .1s ease,background .1s ease;
+}
+.pill-btn.active{ background:var(--yellow); color:var(--black); box-shadow:3px 3px 0 var(--cream); }
+.pill-btn:hover,.reset-btn:hover{ transform:translate(-2px,-2px); box-shadow:5px 5px 0 var(--black); }
+.pill-btn:active,.reset-btn:active{ transform:translate(2px,2px); box-shadow:none; }
+
+.attack-wrap{
+  border:3px solid var(--yellow);
+  clip-path:polygon(2% 0,99% 2%,100% 96%,3% 100%,0 7%);
+  box-shadow:12px 12px 0 var(--black),16px 16px 0 var(--yellow);
+  padding:26px;
+}
+.health-label{ color:var(--yellow); font-weight:700; font-size:.84rem; }
+.health-bar-outer{ height:25px; border:2px solid var(--yellow); transform:skew(-8deg); }
+.health-bar-fill{ background:repeating-linear-gradient(110deg,var(--yellow) 0 18px,var(--yellow-hi) 18px 30px); }
+.playfield{
+  height:min(56vh,500px);
+  min-height:360px;
+  border:2px solid var(--edge);
+  background:
+    linear-gradient(105deg,transparent 0 77%,rgba(255,212,0,.05) 77.2% 78%,transparent 78.2%),
+    repeating-linear-gradient(180deg,transparent 0 38px,rgba(255,212,0,.055) 38px 39px),var(--black);
+}
+.playfield .baseline{ height:5px; background:var(--yellow); box-shadow:0 0 18px rgba(255,212,0,.7); }
+.playfield .player{
+  width:58px; height:38px;
+  background:var(--yellow);
+  clip-path:polygon(50% 0,62% 42%,100% 58%,69% 68%,58% 100%,45% 72%,0 61%,37% 43%);
+  box-shadow:0 0 18px rgba(255,212,0,.65);
+}
+.falling-word{
+  font-size:1.12rem;
+  padding:7px 13px;
+  border:2px solid var(--edge);
+  box-shadow:4px 4px 0 rgba(0,0,0,.8);
+  transition:transform .09s ease,box-shadow .09s ease;
+}
+.falling-word.targeted{ color:var(--cream); border-color:var(--yellow); box-shadow:6px 6px 0 var(--yellow); transform:scale(1.06) rotate(-1deg); }
+.falling-word .typed{ background:var(--yellow); color:var(--black); }
+.falling-word.shot{ animation:word-shot .24s steps(2,end) forwards; }
+@keyframes word-shot{
+  0%{ transform:scale(1.06) rotate(-1deg); filter:none; }
+  34%{ transform:scale(1.3) rotate(5deg); filter:brightness(2); background:var(--cream); color:var(--black); }
+  68%{ transform:scale(.9) rotate(-7deg); filter:contrast(2); }
+  100%{ transform:scale(1.8) rotate(11deg); opacity:0; }
+}
+.attack-shot{
+  position:absolute;
+  z-index:9;
+  height:6px;
+  background:var(--cream);
+  box-shadow:0 0 0 2px var(--black),0 0 0 5px var(--yellow),0 0 20px 7px rgba(255,212,0,.55);
+  transform-origin:0 50%;
+  pointer-events:none;
+  animation:shot-line .18s cubic-bezier(.1,.8,.2,1) forwards;
+}
+@keyframes shot-line{
+  0%{ clip-path:inset(0 100% 0 0); opacity:1; }
+  55%{ clip-path:inset(0 0 0 0); opacity:1; }
+  100%{ clip-path:inset(0 0 0 70%); opacity:0; }
+}
+.shot-impact{
+  position:absolute;
+  z-index:10;
+  width:104px;
+  height:104px;
+  background:var(--yellow);
+  color:var(--black);
+  display:grid;
+  place-items:center;
+  font:400 .9rem/1 'Bowlby One SC','Anton',sans-serif;
+  letter-spacing:.06em;
+  clip-path:polygon(50% 0,60% 31%,82% 8%,74% 38%,100% 36%,76% 53%,96% 72%,68% 67%,70% 100%,51% 73%,35% 97%,36% 68%,5% 81%,28% 56%,0 45%,32% 42%,16% 14%,43% 33%);
+  pointer-events:none;
+  animation:impact-pop .34s cubic-bezier(.1,.85,.2,1) forwards;
+}
+.shot-impact::after{ content:'HIT!'; transform:rotate(-8deg); text-shadow:2px 2px 0 var(--cream); }
+@keyframes impact-pop{
+  0%{ transform:translate(-50%,-50%) scale(.15) rotate(-25deg); opacity:0; }
+  38%{ transform:translate(-50%,-50%) scale(1.2) rotate(7deg); opacity:1; }
+  100%{ transform:translate(-50%,-50%) scale(1.7) rotate(14deg); opacity:0; }
+}
+.attack-footer{ color:var(--cream); text-transform:uppercase; letter-spacing:.06em; }
+.start-overlay{ background:rgba(7,7,5,.94); }
+.start-overlay h3{ font-size:clamp(2.2rem,6vw,4.5rem); transform:skew(-7deg) rotate(-2deg); text-shadow:4px 4px 0 var(--cream); }
+.start-overlay button{ font-size:1rem; box-shadow:6px 6px 0 var(--cream); transition:transform .1s ease,box-shadow .1s ease; }
+.start-overlay button:hover{ transform:translate(-3px,-3px); box-shadow:10px 10px 0 var(--cream); }
+.start-overlay button:active{ transform:translate(3px,3px); box-shadow:2px 2px 0 var(--cream); }
+
+.results-overlay{
+  background:rgba(7,7,5,.94);
+  backdrop-filter:blur(5px);
+}
+.results-overlay::before{
+  content:''; position:absolute; inset:-20%;
+  background:repeating-linear-gradient(110deg,transparent 0 70px,rgba(255,212,0,.09) 72px 76px);
+  animation:result-bg 8s linear infinite;
+}
+@keyframes result-bg{ to{ transform:translateX(180px); } }
+.results-card{
+  position:relative;
+  background:linear-gradient(150deg,var(--yellow) 0 24%,var(--panel) 24.3%);
+  border:4px solid var(--yellow);
+  min-width:min(430px,calc(100vw - 28px));
+  box-shadow:16px 16px 0 var(--black),21px 21px 0 var(--yellow);
+}
+.results-card h2{ font-size:clamp(2.3rem,6vw,4.2rem); transform:skew(-6deg); }
+.rank-badge{ width:110px; height:110px; font-size:5.4rem; background:var(--yellow); box-shadow:8px 8px 0 var(--cream); transform:rotate(-4deg); }
+.results-actions button{ min-width:120px; font-size:.92rem; box-shadow:5px 5px 0 var(--black); transition:transform .1s ease,box-shadow .1s ease; }
+.results-actions button:hover{ transform:translate(-3px,-3px); box-shadow:8px 8px 0 var(--yellow); }
+.results-actions button:active{ transform:translate(2px,2px); box-shadow:1px 1px 0 var(--black); }
+
+#keyEcho{
+  position:fixed;
+  right:clamp(18px,4vw,60px);
+  bottom:clamp(18px,5vh,54px);
+  z-index:40;
+  min-width:72px;
+  padding:8px 14px;
+  color:var(--black);
+  background:var(--yellow);
+  font:400 2.4rem/1 'Anton',sans-serif;
+  text-align:center;
+  box-shadow:7px 7px 0 var(--cream);
+  clip-path:polygon(8% 0,100% 6%,90% 100%,0 86%);
+  opacity:0;
+  pointer-events:none;
+}
+#keyEcho.pop{ animation:key-pop .22s cubic-bezier(.1,.9,.2,1.4); }
+#keyEcho.miss{ background:var(--amber-hi); animation:key-miss .25s steps(2,end); }
+@keyframes key-pop{ 0%{ opacity:0; transform:scale(.4) rotate(-12deg); } 45%{ opacity:1; transform:scale(1.18) rotate(4deg); } 100%{ opacity:0; transform:scale(.95); } }
+@keyframes key-miss{ 0%{ opacity:1; transform:translateX(-8px) rotate(-8deg); } 40%{ transform:translateX(9px) rotate(7deg); } 100%{ opacity:0; transform:none; } }
+body.feedback-miss #app{ animation:app-jolt .18s steps(2,end); }
+@keyframes app-jolt{ 33%{ transform:translateX(-4px); } 66%{ transform:translateX(4px); } }
+
+.audio-dock{
+  position:fixed;
+  z-index:45;
+  top:14px;
+  right:18px;
+  display:flex;
+  gap:7px;
+}
+.audio-dock button{
+  border:1px solid var(--yellow);
+  background:var(--black);
+  color:var(--yellow);
+  padding:7px 10px;
+  font:700 .68rem/1 'JetBrains Mono',monospace;
+  letter-spacing:.08em;
+  box-shadow:3px 3px 0 rgba(255,212,0,.35);
+}
+.audio-dock button[aria-pressed="false"]{ color:var(--cream-dim); border-color:var(--edge); box-shadow:none; }
+.audio-dock button:hover,.audio-dock button:focus-visible{ background:var(--yellow); color:var(--black); }
+.music-credit{
+  margin:30px 8px 0;
+  color:var(--cream-dim);
+  font:500 .72rem/1.5 'JetBrains Mono',monospace;
+  text-align:right;
+  letter-spacing:.04em;
+}
+.music-credit a{ color:var(--yellow); text-underline-offset:3px; }
+.music-credit a:hover{ color:var(--cream); }
+
+@media (max-width:760px){
+  .menu-header::before{ display:none; }
+  .mode-card:nth-child(2n){ transform:none; }
+  .game-topbar{ align-items:flex-start; }
+  .game-topbar .stat-row{ width:100%; justify-content:flex-end; }
+  .stat-chip{ min-width:72px; padding:8px 10px; }
+  .type-panel{ padding:36px 24px 28px; }
+  .hint-row{ align-items:flex-start; gap:14px; flex-direction:column; }
+  .attack-wrap{ padding:14px; }
+}
+
+@media (max-width:480px){
+  .menu-header h1{ text-shadow:3px 3px 0 var(--black),5px 5px 0 var(--yellow); }
+  .mode-card{ padding:22px 22px 25px; }
+  .game-topbar{ clip-path:polygon(2% 0,100% 3%,97% 100%,0 94%); }
+  .mode-title{ order:2; width:55%; }
+  .game-topbar .stat-row{ order:3; justify-content:flex-start; }
+  .stat-chip{ flex:1; }
+  .type-text{ line-height:1.95; }
+  .results-card{ padding:34px 22px; }
+  .audio-dock{ position:relative; top:auto; right:auto; align-self:flex-end; margin:-6px 0 15px; }
+}
+</style>
+</head>
+<body>
+
+<div class="slash-veil" id="slashVeil"></div>
+<div id="keyEcho" aria-hidden="true"></div>
+<div class="audio-dock" aria-label="Audio controls">
+  <button id="musicToggle" type="button" aria-pressed="true" title="Toggle menu music">♫ MUSIC ON</button>
+  <button id="sfxToggle" type="button" aria-pressed="true" title="Toggle sound effects">⌁ SFX ON</button>
+</div>
+<audio id="menuMusic" src="assets/menu-spy.mp3" preload="metadata" loop></audio>
+<input type="text" id="hiddenInput" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+
+<div id="app">
+
+  <!-- ===================== MENU ===================== -->
+  <section class="screen" id="screen-menu">
+    <div class="menu-header">
+      <div class="eyebrow">Phantom Typist Training Program</div>
+      <h1>TYPE<span>//</span>HEIST</h1>
+      <p>Four trials stand between you and the perfect keystroke. Pick your target and take it clean.</p>
+    </div>
+
+    <div class="mode-grid">
+      <button class="mode-card focusable" data-num="01" data-mode="speed">
+        <div class="tag">Trial · Velocity</div>
+        <h3>Speed Test</h3>
+        <p>Race the clock. Words keep coming — see how fast your fingers can move before time runs out.</p>
+        <div class="enter">ENTER ▸</div>
+      </button>
+
+      <button class="mode-card focusable" data-num="02" data-mode="accuracy">
+        <div class="tag">Trial · Precision</div>
+        <h3>Accuracy Test</h3>
+        <p>One passage, no take-backs. Backspace is disabled — every mistake sticks. Aim for a clean run.</p>
+        <div class="enter">ENTER ▸</div>
+      </button>
+
+      <button class="mode-card focusable" data-num="03" data-mode="free">
+        <div class="tag">Trial · Practice</div>
+        <h3>Free Type</h3>
+        <p>No timer, no judgement. Warm up, drill your form, and watch your live stats as you go.</p>
+        <div class="enter">ENTER ▸</div>
+      </button>
+
+      <button class="mode-card focusable" data-num="04" data-mode="attack">
+        <div class="tag">Trial · Combat</div>
+        <h3>Word Attack</h3>
+        <p>Words descend like they mean it. Type them dead before they reach your line. Guard your health.</p>
+        <div class="enter">ENTER ▸</div>
+      </button>
+    </div>
+    <footer class="music-credit">
+      ↑ ↓ ← → to select · Enter to deploy<br>
+      Menu music: <a href="https://pixabay.com/music/funk-spy-166618/" target="_blank" rel="noopener">“Spy” by Pumpupthemind</a> · <a href="https://pixabay.com/service/license-summary/" target="_blank" rel="noopener">Pixabay Content License</a>
+    </footer>
+  </section>
+
+  <!-- ===================== SPEED / ACCURACY / FREE ===================== -->
+  <section class="screen hidden" id="screen-typing">
+    <div class="game-topbar">
+      <button class="back-btn focusable" id="btnBackTyping">◂ MENU</button>
+      <div class="mode-title" id="typingModeTitle">SPEED TEST</div>
+      <div class="stat-row" id="typingStats"></div>
+    </div>
+
+    <div class="type-panel">
+      <div class="type-text mono" id="typeText"></div>
+      <div class="hint-row">
+        <span id="typingHint">start typing to begin</span>
+        <span id="typingExtra"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== ATTACK ===================== -->
+  <section class="screen hidden" id="screen-attack">
+    <div class="game-topbar">
+      <button class="back-btn focusable" id="btnBackAttack">◂ MENU</button>
+      <div class="mode-title">WORD ATTACK</div>
+      <div class="stat-row">
+        <div class="stat-chip"><div class="v" id="attackScore">0</div><div class="l">score</div></div>
+        <div class="stat-chip"><div class="v" id="attackCombo">0</div><div class="l">combo</div></div>
+        <div class="stat-chip"><div class="v" id="attackWave">1</div><div class="l">wave</div></div>
+      </div>
+    </div>
+
+    <div class="attack-wrap">
+      <div class="health-row">
+        <span class="health-label">HP</span>
+        <div class="health-bar-outer"><div class="health-bar-fill" id="healthFill"></div></div>
+      </div>
+      <div class="playfield" id="playfield">
+        <div class="baseline"></div>
+        <div class="player" id="attackPlayer"></div>
+        <div class="start-overlay" id="attackStartOverlay">
+          <h3>Words are inbound</h3>
+          <p>Type any falling word to lock on. Finish it before it crosses your line, or your HP takes the hit.</p>
+          <button id="attackStartBtn">BEGIN ASSAULT</button>
+        </div>
+      </div>
+      <div class="attack-footer">
+        <span>type to target the nearest match</span>
+        <span id="attackDangerMsg" aria-live="polite"></span>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+'use strict';
+
+/* ============================================================
+   UTILITIES & DATA
+============================================================ */
+const Utils = {
+  randInt(min, max){ return Math.floor(Math.random() * (max - min + 1)) + min; },
+  pick(arr){ return arr[Utils.randInt(0, arr.length - 1)]; },
+  clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); },
+  escapeHtml(ch){
+    if (ch === '&') return '&amp;';
+    if (ch === '<') return '&lt;';
+    if (ch === '>') return '&gt;';
+    return ch;
+  },
+  formatTime(sec){
+    sec = Math.max(0, Math.round(sec));
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return m + ':' + String(s).padStart(2, '0');
+  }
+};
+
+const WORD_BANK = [
+  'shadow','trace','vault','signal','ledger','static','mirror','velvet','copper','ember',
+  'hollow','quartz','ribbon','ash','drift','cipher','lantern','marble','thread','ghost',
+  'harbor','glass','pivot','rust','crown','tunnel','wire','echo','frost',
+  'raven','silver','anchor','blade','clock','doubt','fable','grain','habit','iron',
+  'jolt','karma','latch','mask','notch','omen','pulse','quiet','riddle','sable',
+  'talon','usher','vapor','wager','yield','zealot','amber','brisk','cadence','dagger',
+  'edge','flare','grid','hush','ivory','jagged','knot','lucid','mute','nerve',
+  'orbit','plume','quill','relay','spark','tether','umbra','vigil','whisper','xenon',
+  'yonder','zenith','crest','drape','flint','grove','honor','inlet','joint','key',
+  'loop','myth','nudge','oath','prism','quest','rift','snare','trail','unity',
+  'alibi','bandit','caper','decoy','escape','forge','guise','heist','ingot','jester',
+  'keystone','lockpick','manor','nightfall','outpost','plot','quarry','rogue','sentry','target',
+  'undertow','witness','xray','yardstick','zone','beacon','curfew','disguise','exit',
+  'facade','gambit','hideout','identity','junction','kindred','legacy','moonlit','nocturne','oracle',
+  'passage','quiver','rooftop','shroud','tactic','undercover','veil','warden','alley','blueprint',
+  'contact','descend','escort','feint','gate','handoff','intel','jimmy','ladder','motive',
+  'network','operative','payload','recon','safehouse','tip','underground','vantage','watch','ally',
+  'breach','conceal','deceive','elude','flee','guard','hijack','infiltrate','jump','lurk',
+  'maneuver','navigate','observe','patrol','question','retreat','scheme','trespass','unlock','vanish',
+  'chrome','ambush','bargain','crossfire','deadline','extract','flank','grapple','intercept','jeopardy',
+  'circuit','dossier','encrypt','firewall','glitch','holotag','impulse','jitter','kernel',
+  'latency','module','node','override','protocol','query','router','sequence','terminal','uplink'
+];
+
+const HEIST_SENTENCES = [
+  "The calling card was left at midnight, folded once, signed by no one you could name.",
+  "A phantom thief never leaves fingerprints, only the quiet suggestion that they were there.",
+  "Every vault has a rhythm, and every rhythm has a gap wide enough to slip through.",
+  "The safe cracked open on the third turn, exactly when the guard changed shifts outside.",
+  "She memorized the floor plan in a single glance and forgot her own name by comparison.",
+  "Somewhere between the second hallway and the security desk, the plan quietly fell apart.",
+  "The target never suspected the courier, mostly because the courier never once looked back.",
+  "A single loose thread on the tapestry was the only clue the crew had left behind.",
+  "Under the velvet cape the ledger was already changing hands, page by careful page.",
+  "The getaway car idled two blocks away, engine humming like it already knew the ending.",
+  "Trust was the one thing nobody in this line of work could afford to spend twice.",
+  "The mask came off only once the elevator doors sealed shut behind them for good.",
+  "Nobody remembers the guard who almost caught them, only the door that opened anyway.",
+  "The forged signature took four attempts and one very steady, very patient hand.",
+  "By the time the alarm rang, the crew was three rooftops away and still walking calmly."
+];
+
+const ATTACK_WORDS = WORD_BANK.filter(w => w.length >= 3 && w.length <= 8);
+const BATCH_WORD_COUNT = 25;
+
+function generateWordString(count){
+  const words = [];
+  for (let i = 0; i < count; i++) words.push(Utils.pick(WORD_BANK));
+  return words.join(' ');
+}
+
+/* ============================================================
+   AUDIO — synthesized interaction SFX + licensed menu track
+============================================================ */
+class AudioDirector {
+  constructor(musicEl){
+    this.musicEl = musicEl;
+    this.musicEnabled = true;
+    this.sfxEnabled = true;
+    this.ctx = null;
+    this.master = null;
+    this.musicEl.volume = 0.2;
+  }
+
+  unlock(){
+    if (!this.ctx){
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      this.ctx = new AudioCtx();
+      this.master = this.ctx.createGain();
+      this.master.gain.value = 0.24;
+      this.master.connect(this.ctx.destination);
+    }
+    if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+  }
+
+  playMusic(){
+    if (!this.musicEnabled) return;
+    this.musicEl.play().catch(() => {});
+  }
+
+  pauseMusic(){ this.musicEl.pause(); }
+
+  tone(freq, duration = .04, type = 'square', volume = .1, delay = 0, endFreq = null){
+    if (!this.sfxEnabled || !this.ctx || !this.master) return;
+    const now = this.ctx.currentTime + delay;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, now);
+    if (endFreq) osc.frequency.exponentialRampToValueAtTime(Math.max(20, endFreq), now + duration);
+    gain.gain.setValueAtTime(volume, now);
+    gain.gain.exponentialRampToValueAtTime(.0001, now + duration);
+    osc.connect(gain);
+    gain.connect(this.master);
+    osc.start(now);
+    osc.stop(now + duration + .02);
+  }
+
+  noise(duration = .035, volume = .05, delay = 0){
+    if (!this.sfxEnabled || !this.ctx || !this.master) return;
+    const length = Math.max(1, Math.floor(this.ctx.sampleRate * duration));
+    const buffer = this.ctx.createBuffer(1, length, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < length; i++) data[i] = Math.random() * 2 - 1;
+    const source = this.ctx.createBufferSource();
+    const gain = this.ctx.createGain();
+    const now = this.ctx.currentTime + delay;
+    source.buffer = buffer;
+    gain.gain.setValueAtTime(volume, now);
+    gain.gain.exponentialRampToValueAtTime(.0001, now + duration);
+    source.connect(gain);
+    gain.connect(this.master);
+    source.start(now);
+  }
+
+  key(success, strong){
+    if (!success){
+      this.tone(115, .11, 'sawtooth', .14, 0, 62);
+      this.noise(.07, .08);
+      return;
+    }
+    const pitch = 520 + Math.random() * 110;
+    this.tone(pitch, strong ? .055 : .028, 'square', strong ? .11 : .065);
+    this.noise(strong ? .045 : .022, strong ? .055 : .028);
+  }
+
+  ui(kind){
+    if (kind === 'navigate'){
+      this.tone(300, .035, 'square', .08, 0, 430);
+    } else if (kind === 'select'){
+      this.tone(220, .06, 'sawtooth', .1, 0, 620);
+      this.tone(760, .08, 'square', .07, .045, 920);
+    } else if (kind === 'back'){
+      this.tone(420, .07, 'square', .08, 0, 180);
+    } else {
+      this.tone(390, .025, 'square', .055);
+    }
+  }
+
+  shot(){
+    this.noise(.13, .2);
+    this.tone(150, .16, 'sawtooth', .2, 0, 48);
+    this.tone(880, .07, 'square', .1, .025, 240);
+  }
+
+  result(){
+    [330, 494, 659, 988].forEach((freq, i) => this.tone(freq, .16, 'square', .075, i * .07));
+  }
+}
+
+/* ============================================================
+   TYPING TEST BASE (shared by speed / accuracy / free)
+============================================================ */
+class TypingTestBase {
+  constructor(textEl, opts = {}){
+    this.textEl = textEl;
+    this.allowBackspace = opts.allowBackspace !== false;
+    this.completeOnEnd = opts.completeOnEnd !== false;
+    this.target = '';
+    this.typed = '';
+    this.startTime = null;
+    this.endTime = null;
+    this.finished = false;
+    this.correctChars = 0;
+    this.totalKeystrokes = 0;
+    this.cumulativeCorrect = 0;
+    this.cumulativeKeystrokes = 0;
+    this.onUpdate = () => {};
+    this.onComplete = () => {};
+    this.onBatchComplete = () => {};
+  }
+
+  setTarget(text){
+    this.target = text;
+    this.render();
+  }
+
+  reset(newTarget){
+    this.typed = '';
+    this.startTime = null;
+    this.endTime = null;
+    this.finished = false;
+    this.correctChars = 0;
+    this.totalKeystrokes = 0;
+    this.cumulativeCorrect = 0;
+    this.cumulativeKeystrokes = 0;
+    if (newTarget !== undefined) this.target = newTarget;
+    this.render();
+  }
+
+  /** swaps in a fresh batch of words while preserving cumulative session stats & timer */
+  startNewBatch(newTarget){
+    this.typed = '';
+    this.correctChars = 0;
+    this.totalKeystrokes = 0;
+    this.target = newTarget;
+    this.render();
+  }
+
+  /** returns the value the hidden input should be forced back to (for blocking backspace) */
+  handleInputValue(value){
+    if (this.finished) return this.typed;
+
+    if (!this.allowBackspace && value.length < this.typed.length){
+      return this.typed; // reject deletions
+    }
+
+    if (!this.startTime && value.length > 0) this.startTime = performance.now();
+
+    if (value.length > this.typed.length){
+      this.totalKeystrokes += (value.length - this.typed.length);
+    }
+
+    this.typed = value.length > this.target.length ? value.slice(0, this.target.length) : value;
+    this.evaluate();
+    this.render();
+    this.onUpdate(this.getStats());
+
+    if (this.typed.length >= this.target.length && this.target.length > 0){
+      if (this.completeOnEnd){
+        this.complete();
+      } else {
+        this.cumulativeCorrect += this.correctChars;
+        this.cumulativeKeystrokes += this.totalKeystrokes;
+        this.onBatchComplete();
+      }
+    }
+    return this.typed;
+  }
+
+  evaluate(){
+    let correct = 0;
+    for (let i = 0; i < this.typed.length; i++){
+      if (this.typed[i] === this.target[i]) correct++;
+    }
+    this.correctChars = correct;
+  }
+
+  getStats(){
+    const now = this.endTime || performance.now();
+    const minutes = this.startTime ? Math.max((now - this.startTime) / 60000, 1 / 6000) : 0;
+    const totalCorrect = this.cumulativeCorrect + this.correctChars;
+    const totalKeys = this.cumulativeKeystrokes + this.totalKeystrokes;
+    const wpm = this.startTime ? Math.round((totalCorrect / 5) / minutes) : 0;
+    const accuracy = totalKeys > 0
+      ? Utils.clamp(Math.round((totalCorrect / totalKeys) * 100), 0, 100)
+      : 100;
+    const elapsed = this.startTime ? (now - this.startTime) / 1000 : 0;
+    return { wpm, accuracy, elapsed, correctChars: totalCorrect, totalKeystrokes: totalKeys };
+  }
+
+  complete(){
+    if (this.finished) return;
+    this.finished = true;
+    this.endTime = performance.now();
+    this.onComplete(this.getStats());
+  }
+
+  render(){
+    let html = '';
+    const typedLen = this.typed.length;
+    for (let i = 0; i < this.target.length; i++){
+      let cls = 'pending';
+      if (i < typedLen) cls = (this.typed[i] === this.target[i]) ? 'correct' : 'incorrect';
+      else if (i === typedLen) cls = 'current';
+      const rawChar = this.target[i];
+      const displayChar = rawChar === ' ' ? ' ' : Utils.escapeHtml(rawChar);
+      html += '<span class="ch ' + cls + '">' + displayChar + '</span>';
+    }
+    this.textEl.innerHTML = html;
+    const currentEl = this.textEl.querySelector('.current');
+    if (currentEl && currentEl.scrollIntoView) currentEl.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
+}
+
+class SpeedTestMode extends TypingTestBase {
+  constructor(textEl, durationSec){
+    super(textEl, { allowBackspace: true, completeOnEnd: false });
+    this.duration = durationSec;
+    this.timeRemaining = durationSec;
+    this.timerId = null;
+    this.onTick = () => {};
+  }
+
+  init(){
+    this.setTarget(generateWordString(BATCH_WORD_COUNT));
+  }
+
+  handleInputValue(value){
+    const wasStarted = !!this.startTime;
+    const result = super.handleInputValue(value);
+    if (!wasStarted && this.startTime) this.beginTimer();
+    return result;
+  }
+
+  beginTimer(){
+    this.timerId = setInterval(() => {
+      this.timeRemaining -= 1;
+      this.onTick(this.timeRemaining);
+      if (this.timeRemaining <= 0){
+        clearInterval(this.timerId);
+        this.complete();
+      }
+    }, 1000);
+  }
+
+  destroy(){ if (this.timerId) clearInterval(this.timerId); }
+}
+
+class AccuracyTestMode extends TypingTestBase {
+  constructor(textEl){
+    super(textEl, { allowBackspace: false, completeOnEnd: true });
+  }
+  init(){
+    const passage = Utils.pick(HEIST_SENTENCES) + ' ' + Utils.pick(HEIST_SENTENCES);
+    this.setTarget(passage);
+  }
+  destroy(){}
+}
+
+class FreeTypeMode extends TypingTestBase {
+  constructor(textEl){
+    super(textEl, { allowBackspace: true, completeOnEnd: false });
+  }
+  init(){
+    this.setTarget(generateWordString(BATCH_WORD_COUNT));
+  }
+  destroy(){}
+}
+
+/* ============================================================
+   ATTACK MODE
+============================================================ */
+class AttackMode {
+  constructor({ playfieldEl, playerEl, healthFillEl, scoreEl, comboEl, waveEl, dangerEl }){
+    this.playfieldEl = playfieldEl;
+    this.playerEl = playerEl;
+    this.healthFillEl = healthFillEl;
+    this.scoreEl = scoreEl;
+    this.comboEl = comboEl;
+    this.waveEl = waveEl;
+    this.dangerEl = dangerEl;
+
+    this.words = [];
+    this.nextId = 1;
+    this.health = 100;
+    this.score = 0;
+    this.combo = 0;
+    this.wave = 1;
+    this.currentTargetId = null;
+    this.running = false;
+    this.rafId = null;
+    this.lastTime = null;
+    this.spawnTimer = 0;
+    this.spawnInterval = 2200;
+    this.baseSpeed = 34; // px/sec
+    this.elapsed = 0;
+
+    this.onGameOver = () => {};
+  }
+
+  start(){
+    this.running = true;
+    this.lastTime = performance.now();
+    this.loop();
+  }
+
+  stop(){
+    this.running = false;
+    if (this.rafId) cancelAnimationFrame(this.rafId);
+    this.words.forEach(w => w.el.remove());
+    this.words = [];
+  }
+
+  loop(){
+    if (!this.running) return;
+    const now = performance.now();
+    const dt = Math.min((now - this.lastTime) / 1000, 0.1);
+    this.lastTime = now;
+    this.elapsed += dt;
+    this.update(dt);
+    this.rafId = requestAnimationFrame(() => this.loop());
+  }
+
+  update(dt){
+    // difficulty ramp every 15s
+    const wave = 1 + Math.floor(this.elapsed / 15);
+    if (wave !== this.wave){
+      this.wave = wave;
+      this.waveEl.textContent = String(this.wave);
+      this.spawnInterval = Math.max(700, 2200 - wave * 150);
+      this.baseSpeed = Math.min(110, 34 + wave * 8);
+    }
+
+    this.spawnTimer += dt * 1000;
+    if (this.spawnTimer >= this.spawnInterval && this.words.length < 7){
+      this.spawnTimer = 0;
+      this.spawnWord();
+    }
+
+    const fieldHeight = this.playfieldEl.clientHeight;
+    const baselineY = fieldHeight - 46;
+
+    for (const w of this.words.slice()){
+      w.y += w.speed * dt;
+      w.el.style.top = w.y + 'px';
+      if (w.y >= baselineY){
+        this.missWord(w);
+      }
+    }
+  }
+
+  spawnWord(){
+    const text = Utils.pick(ATTACK_WORDS);
+    const el = document.createElement('div');
+    el.className = 'falling-word';
+    el.innerHTML = '<span class="typed"></span><span class="rest">' + text + '</span>';
+    const fieldWidth = this.playfieldEl.clientWidth;
+    const left = Utils.randInt(20, Math.max(20, fieldWidth - 100));
+    el.style.left = left + 'px';
+    this.playfieldEl.appendChild(el);
+
+    const word = {
+      id: this.nextId++,
+      text,
+      progress: 0,
+      y: -30,
+      speed: this.baseSpeed * Utils.clamp(1 + (0.5 - text.length / 20), 0.7, 1.3),
+      el
+    };
+    this.words.push(word);
+  }
+
+  handleChar(rawChar){
+    const c = rawChar.toLowerCase();
+    if (!/^[a-z0-9]$/.test(c)) return null;
+
+    let target = this.words.find(w => w.id === this.currentTargetId);
+
+    if (target){
+      const expected = target.text[target.progress];
+      if (expected === c){
+        target.progress++;
+        this.renderWord(target);
+        if (target.progress >= target.text.length){
+          this.destroyWord(target);
+          return 'destroyed';
+        }
+        return 'correct';
+      } else {
+        this.flashDanger('miss');
+        return 'miss';
+      }
+    }
+
+    // acquire a new target: prefer the word closest to the baseline
+    const candidates = this.words.filter(w => w.text[0] === c);
+    if (candidates.length === 0){
+      this.flashDanger('miss');
+      return 'miss';
+    }
+    candidates.sort((a, b) => b.y - a.y);
+    target = candidates[0];
+    target.progress = 1;
+    this.currentTargetId = target.id;
+    target.el.classList.add('targeted');
+    this.renderWord(target);
+    if (target.progress >= target.text.length){
+      this.destroyWord(target);
+      return 'destroyed';
+    }
+    return 'correct';
+  }
+
+  renderWord(word){
+    const typedSpan = word.el.querySelector('.typed');
+    const restSpan = word.el.querySelector('.rest');
+    typedSpan.textContent = word.text.slice(0, word.progress);
+    restSpan.textContent = word.text.slice(word.progress);
+  }
+
+  createShotEffect(word){
+    const fieldRect = this.playfieldEl.getBoundingClientRect();
+    const wordRect = word.el.getBoundingClientRect();
+    const playerRect = this.playerEl.getBoundingClientRect();
+    const startX = playerRect.left - fieldRect.left + playerRect.width / 2;
+    const startY = playerRect.top - fieldRect.top + playerRect.height / 2;
+    const endX = wordRect.left - fieldRect.left + wordRect.width / 2;
+    const endY = wordRect.top - fieldRect.top + wordRect.height / 2;
+    const dx = endX - startX;
+    const dy = endY - startY;
+
+    const shot = document.createElement('div');
+    shot.className = 'attack-shot';
+    shot.style.left = startX + 'px';
+    shot.style.top = startY + 'px';
+    shot.style.width = Math.hypot(dx, dy) + 'px';
+    shot.style.transform = 'rotate(' + Math.atan2(dy, dx) + 'rad)';
+
+    const impact = document.createElement('div');
+    impact.className = 'shot-impact';
+    impact.style.left = endX + 'px';
+    impact.style.top = endY + 'px';
+
+    this.playfieldEl.append(shot, impact);
+    setTimeout(() => { shot.remove(); impact.remove(); }, 420);
+  }
+
+  destroyWord(word){
+    this.createShotEffect(word);
+    this.words = this.words.filter(w => w.id !== word.id);
+    if (this.currentTargetId === word.id) this.currentTargetId = null;
+    this.combo++;
+    this.score += word.text.length * 10 * Math.max(1, Math.floor(this.combo / 5) + 1);
+    this.scoreEl.textContent = String(this.score);
+    this.comboEl.textContent = String(this.combo);
+    word.el.classList.add('shot');
+    setTimeout(() => word.el.remove(), 360);
+  }
+
+  missWord(word){
+    this.words = this.words.filter(w => w.id !== word.id);
+    if (this.currentTargetId === word.id) this.currentTargetId = null;
+    this.combo = 0;
+    this.comboEl.textContent = '0';
+    this.health = Utils.clamp(this.health - 14, 0, 100);
+    this.updateHealth();
+    word.el.classList.add('missed');
+    setTimeout(() => word.el.remove(), 220);
+    this.playerEl.classList.remove('hit');
+    void this.playerEl.offsetWidth;
+    this.playerEl.classList.add('hit');
+    this.flashDanger('hit');
+    if (this.health <= 0) this.gameOver();
+  }
+
+  updateHealth(){
+    this.healthFillEl.style.width = this.health + '%';
+    this.healthFillEl.classList.toggle('danger', this.health <= 30);
+  }
+
+  flashDanger(kind){
+    this.dangerEl.textContent = kind === 'hit' ? 'hull breach!' : 'no match';
+    clearTimeout(this._dangerTimeout);
+    this._dangerTimeout = setTimeout(() => { this.dangerEl.textContent = ''; }, 700);
+  }
+
+  gameOver(){
+    this.stop();
+    this.onGameOver({ score: this.score, wave: this.wave, combo: this.combo });
+  }
+}
+
+/* ============================================================
+   APP CONTROLLER
+============================================================ */
+class App {
+  constructor(){
+    this.hiddenInput = document.getElementById('hiddenInput');
+    this.slashVeil = document.getElementById('slashVeil');
+    this.keyEcho = document.getElementById('keyEcho');
+    this.audio = new AudioDirector(document.getElementById('menuMusic'));
+
+    this.screens = {
+      menu: document.getElementById('screen-menu'),
+      typing: document.getElementById('screen-typing'),
+      attack: document.getElementById('screen-attack')
+    };
+
+    this.typingModeTitle = document.getElementById('typingModeTitle');
+    this.typingStats = document.getElementById('typingStats');
+    this.typeTextEl = document.getElementById('typeText');
+    this.typingHint = document.getElementById('typingHint');
+    this.typingExtra = document.getElementById('typingExtra');
+
+    this.currentMode = null;   // 'speed' | 'accuracy' | 'free' | 'attack'
+    this.currentEngine = null;
+    this.attackEngine = null;
+    this.speedDuration = 30;
+    this.menuIndex = -1;
+
+    this.bindAudioControls();
+    this.bindMenu();
+    this.bindTypingScreen();
+    this.bindAttackScreen();
+    this.bindGlobalInput();
+  }
+
+  pulseFeedback(key, success = true, strong = false){
+    const label = key === ' ' ? 'SPACE' : String(key || '').toUpperCase();
+    this.keyEcho.textContent = label;
+    this.keyEcho.className = '';
+    document.body.classList.remove('feedback-miss');
+    void this.keyEcho.offsetWidth;
+    this.keyEcho.classList.add(success ? 'pop' : 'miss');
+
+    if (!success){
+      document.body.classList.add('feedback-miss');
+      setTimeout(() => document.body.classList.remove('feedback-miss'), 220);
+    }
+
+    const panel = this.typeTextEl.closest('.type-panel');
+    if (panel && this.currentMode !== 'attack'){
+      panel.classList.remove('input-hit', 'input-miss');
+      void panel.offsetWidth;
+      panel.classList.add(success ? 'input-hit' : 'input-miss');
+      setTimeout(() => panel.classList.remove('input-hit', 'input-miss'), 260);
+    }
+
+    if (navigator.vibrate) navigator.vibrate(success ? (strong ? 18 : 7) : [18, 24, 18]);
+    this.audio.key(success, strong);
+  }
+
+  bindAudioControls(){
+    const musicBtn = document.getElementById('musicToggle');
+    const sfxBtn = document.getElementById('sfxToggle');
+
+    musicBtn.addEventListener('click', () => {
+      this.audio.unlock();
+      this.audio.musicEnabled = !this.audio.musicEnabled;
+      musicBtn.setAttribute('aria-pressed', String(this.audio.musicEnabled));
+      musicBtn.textContent = this.audio.musicEnabled ? '♫ MUSIC ON' : '♫ MUSIC OFF';
+      if (this.audio.musicEnabled && !this.currentMode) this.audio.playMusic();
+      else this.audio.pauseMusic();
+    });
+
+    sfxBtn.addEventListener('click', () => {
+      this.audio.unlock();
+      this.audio.sfxEnabled = !this.audio.sfxEnabled;
+      sfxBtn.setAttribute('aria-pressed', String(this.audio.sfxEnabled));
+      sfxBtn.textContent = this.audio.sfxEnabled ? '⌁ SFX ON' : '⌁ SFX OFF';
+      if (this.audio.sfxEnabled) this.audio.ui('select');
+    });
+  }
+
+  /* ---------- navigation ---------- */
+  playSlash(){
+    this.slashVeil.classList.remove('run');
+    void this.slashVeil.offsetWidth;
+    this.slashVeil.classList.add('run');
+  }
+
+  showScreen(name){
+    this.playSlash();
+    clearTimeout(this._screenTimer);
+    this._screenTimer = setTimeout(() => {
+      Object.entries(this.screens).forEach(([key, el]) => {
+        el.classList.toggle('hidden', key !== name);
+        if (key === name){
+          el.style.animation = 'none';
+          void el.offsetWidth;
+          el.style.animation = '';
+        }
+      });
+    }, 145);
+  }
+
+  focusInput(){
+    this.hiddenInput.value = '';
+    this.hiddenInput.focus({ preventScroll: true });
+  }
+
+  /* ---------- menu ---------- */
+  bindMenu(){
+    this.menuCards = [...document.querySelectorAll('.mode-card')];
+    this.menuCards.forEach((card, index) => {
+      card.addEventListener('focus', () => this.selectMenuCard(index, false));
+      card.addEventListener('click', () => this.startMode(card.dataset.mode));
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (this.currentMode || !['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Home','End'].includes(e.key)) return;
+      e.preventDefault();
+      const singleColumn = window.matchMedia('(max-width: 640px)').matches;
+      const direction = {
+        ArrowLeft: -1,
+        ArrowRight: 1,
+        ArrowUp: singleColumn ? -1 : -2,
+        ArrowDown: singleColumn ? 1 : 2
+      }[e.key];
+
+      let next = this.menuIndex;
+      if (e.key === 'Home') next = 0;
+      else if (e.key === 'End') next = this.menuCards.length - 1;
+      else if (next < 0) next = direction < 0 ? this.menuCards.length - 1 : 0;
+      else next = (next + direction + this.menuCards.length) % this.menuCards.length;
+      this.selectMenuCard(next, true);
+    });
+  }
+
+  selectMenuCard(index, announce){
+    this.menuIndex = index;
+    this.menuCards.forEach((card, i) => card.classList.toggle('menu-selected', i === index));
+    if (announce){
+      this.audio.ui('navigate');
+      this.menuCards[index].focus({ preventScroll: true });
+    }
+  }
+
+  goToMenu(){
+    if (this.currentEngine && this.currentEngine.destroy) this.currentEngine.destroy();
+    if (this.attackEngine) this.attackEngine.stop();
+    this.currentEngine = null;
+    this.currentMode = null;
+    this.audio.ui('back');
+    this.showScreen('menu');
+    setTimeout(() => this.audio.playMusic(), 170);
+  }
+
+  /* ---------- typing modes (speed / accuracy / free) ---------- */
+  bindTypingScreen(){
+    document.getElementById('btnBackTyping').addEventListener('click', () => this.goToMenu());
+  }
+
+  renderTypingStatsBar(mode){
+    if (mode === 'speed'){
+      this.typingStats.innerHTML =
+        this.chip('timeVal', Utils.formatTime(this.speedDuration), 'time') +
+        this.chip('wpmVal', '0', 'wpm') +
+        this.chip('accVal', '100', 'acc');
+    } else if (mode === 'accuracy'){
+      this.typingStats.innerHTML =
+        this.chip('timeVal', '0:00', 'time') +
+        this.chip('accVal', '100', 'acc') +
+        this.chip('wpmVal', '0', 'wpm');
+    } else {
+      this.typingStats.innerHTML =
+        this.chip('wpmVal', '0', 'wpm') +
+        this.chip('accVal', '100', 'acc') +
+        this.chip('timeVal', '0:00', 'time');
+    }
+  }
+
+  chip(id, val, label){
+    return '<div class="stat-chip"><div class="v" id="' + id + '">' + val + '</div><div class="l">' + label + '</div></div>';
+  }
+
+  /** swaps in the next finite word batch and plays the glitch-wipe reveal over the panel */
+  swapWordBatch(){
+    const panel = this.typeTextEl.closest('.type-panel');
+    this.currentEngine.startNewBatch(generateWordString(BATCH_WORD_COUNT));
+
+    panel.classList.remove('glitching');
+    void panel.offsetWidth; // restart animation
+    panel.classList.add('glitching');
+
+    const clearGlitch = () => panel.classList.remove('glitching');
+    this.typeTextEl.addEventListener('animationend', clearGlitch, { once: true });
+    setTimeout(clearGlitch, 650); // safety net in case animationend doesn't fire
+  }
+
+  startMode(mode){
+    if (this.currentEngine && this.currentEngine.destroy) this.currentEngine.destroy();
+    this.currentMode = mode;
+    this.audio.unlock();
+    this.audio.ui('select');
+    this.audio.pauseMusic();
+
+    if (mode === 'attack'){
+      this.startAttackMode();
+      return;
+    }
+
+    this.showScreen('typing');
+    this.renderTypingStatsBar(mode);
+
+    const titles = { speed: 'SPEED TEST', accuracy: 'ACCURACY TEST', free: 'FREE TYPE' };
+    this.typingModeTitle.textContent = titles[mode];
+
+    if (mode === 'speed'){
+      this.typingHint.textContent = 'start typing — 30s on the clock';
+      this.typingExtra.innerHTML = this.durationToggle();
+      this.currentEngine = new SpeedTestMode(this.typeTextEl, this.speedDuration);
+      this.currentEngine.onTick = (t) => {
+        document.getElementById('timeVal').textContent = Utils.formatTime(t);
+      };
+      this.currentEngine.onUpdate = (stats) => {
+        document.getElementById('wpmVal').textContent = String(stats.wpm);
+        document.getElementById('accVal').textContent = String(stats.accuracy);
+      };
+      this.currentEngine.onComplete = (stats) => this.showResults('SPEED TEST', stats, this.rankForWpm(stats.wpm));
+      this.currentEngine.onBatchComplete = () => this.swapWordBatch();
+      this.currentEngine.init();
+      this.bindDurationToggle();
+    }
+
+    if (mode === 'accuracy'){
+      this.typingHint.textContent = 'no backspace — one clean pass';
+      this.typingExtra.textContent = '';
+      this.currentEngine = new AccuracyTestMode(this.typeTextEl);
+      this.currentEngine.onUpdate = (stats) => {
+        document.getElementById('accVal').textContent = String(stats.accuracy);
+        document.getElementById('wpmVal').textContent = String(stats.wpm);
+        document.getElementById('timeVal').textContent = Utils.formatTime(stats.elapsed);
+      };
+      this.currentEngine.onComplete = (stats) => this.showResults('ACCURACY TEST', stats, this.rankForAccuracy(stats.accuracy));
+      this.currentEngine.init();
+    }
+
+    if (mode === 'free'){
+      this.typingHint.textContent = 'no timer — just practice';
+      this.typingExtra.innerHTML = '<button class="reset-btn" id="freeResetBtn">RESET</button>';
+      this.currentEngine = new FreeTypeMode(this.typeTextEl);
+      this.currentEngine.onUpdate = (stats) => {
+        document.getElementById('wpmVal').textContent = String(stats.wpm);
+        document.getElementById('accVal').textContent = String(stats.accuracy);
+        document.getElementById('timeVal').textContent = Utils.formatTime(stats.elapsed);
+      };
+      this.currentEngine.init();
+      this.currentEngine.onBatchComplete = () => this.swapWordBatch();
+      document.getElementById('freeResetBtn').addEventListener('click', () => {
+        this.currentEngine.reset(generateWordString(BATCH_WORD_COUNT));
+        this.hiddenInput.value = '';
+        this.focusInput();
+      });
+    }
+
+    this.focusInput();
+  }
+
+  durationToggle(){
+    return '<div class="pill-group">' +
+      [15, 30, 60].map(d =>
+        '<button class="pill-btn ' + (d === this.speedDuration ? 'active' : '') + '" data-dur="' + d + '">' + d + 's</button>'
+      ).join('') +
+      '</div>';
+  }
+
+  bindDurationToggle(){
+    this.typingExtra.querySelectorAll('.pill-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.speedDuration = Number(btn.dataset.dur);
+        this.startMode('speed'); // restart with new duration
+      });
+    });
+  }
+
+  rankForWpm(wpm){
+    if (wpm >= 90) return 'S';
+    if (wpm >= 70) return 'A';
+    if (wpm >= 50) return 'B';
+    if (wpm >= 30) return 'C';
+    return 'D';
+  }
+  rankForAccuracy(acc){
+    if (acc >= 98) return 'S';
+    if (acc >= 94) return 'A';
+    if (acc >= 88) return 'B';
+    if (acc >= 75) return 'C';
+    return 'D';
+  }
+  rankForScore(score){
+    if (score >= 4000) return 'S';
+    if (score >= 2500) return 'A';
+    if (score >= 1200) return 'B';
+    if (score >= 400) return 'C';
+    return 'D';
+  }
+
+  showResults(label, stats, rank){
+    const overlay = document.createElement('div');
+    overlay.className = 'results-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', label + ' results');
+
+    let statsHtml = '';
+    if ('wpm' in stats){
+      statsHtml =
+        '<div><div class="v">' + stats.wpm + '</div><div class="l">wpm</div></div>' +
+        '<div><div class="v">' + stats.accuracy + '%</div><div class="l">accuracy</div></div>' +
+        '<div><div class="v">' + Utils.formatTime(stats.elapsed) + '</div><div class="l">time</div></div>';
+    } else {
+      statsHtml =
+        '<div><div class="v">' + stats.score + '</div><div class="l">score</div></div>' +
+        '<div><div class="v">' + stats.wave + '</div><div class="l">wave</div></div>' +
+        '<div><div class="v">' + stats.combo + '</div><div class="l">max combo</div></div>';
+    }
+
+    overlay.innerHTML =
+      '<div class="results-card">' +
+        '<div class="eyebrow">Heist Debrief</div>' +
+        '<h2>' + label + '</h2>' +
+        '<div class="rank-badge">' + rank + '</div>' +
+        '<div class="results-stats">' + statsHtml + '</div>' +
+        '<div class="results-actions">' +
+          '<button class="btn-primary" id="resultsRetry">RETRY</button>' +
+          '<button class="btn-secondary" id="resultsMenu">MENU</button>' +
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(overlay);
+    this.audio.result();
+
+    overlay.querySelector('#resultsRetry').addEventListener('click', () => {
+      overlay.remove();
+      this.startMode(this.currentMode);
+    });
+    overlay.querySelector('#resultsMenu').addEventListener('click', () => {
+      overlay.remove();
+      this.goToMenu();
+    });
+  }
+
+  /* ---------- attack mode ---------- */
+  bindAttackScreen(){
+    document.getElementById('btnBackAttack').addEventListener('click', () => this.goToMenu());
+    document.getElementById('attackStartBtn').addEventListener('click', () => this.beginAttackRun());
+  }
+
+  startAttackMode(){
+    this.showScreen('attack');
+    document.getElementById('attackScore').textContent = '0';
+    document.getElementById('attackCombo').textContent = '0';
+    document.getElementById('attackWave').textContent = '1';
+    document.getElementById('attackStartOverlay').classList.remove('hidden');
+    document.getElementById('healthFill').style.width = '100%';
+    document.getElementById('healthFill').classList.remove('danger');
+
+    this.attackEngine = new AttackMode({
+      playfieldEl: document.getElementById('playfield'),
+      playerEl: document.getElementById('attackPlayer'),
+      healthFillEl: document.getElementById('healthFill'),
+      scoreEl: document.getElementById('attackScore'),
+      comboEl: document.getElementById('attackCombo'),
+      waveEl: document.getElementById('attackWave'),
+      dangerEl: document.getElementById('attackDangerMsg')
+    });
+    this.attackEngine.onGameOver = (stats) => this.showResults('WORD ATTACK', stats, this.rankForScore(stats.score));
+  }
+
+  beginAttackRun(){
+    document.getElementById('attackStartOverlay').classList.add('hidden');
+    this.attackEngine.start();
+    this.focusInput();
+  }
+
+  /* ---------- global input plumbing ---------- */
+  bindGlobalInput(){
+    // Keep the hidden input focused whenever we are on a game screen.
+    document.addEventListener('click', () => {
+      if (this.currentMode) this.hiddenInput.focus({ preventScroll: true });
+    });
+
+    this.hiddenInput.addEventListener('beforeinput', (e) => {
+      const engine = this.currentEngine;
+      if (engine && engine.allowBackspace === false && e.inputType === 'deleteContentBackward'){
+        e.preventDefault();
+        this.pulseFeedback('NO', false);
+      }
+    });
+
+    this.hiddenInput.addEventListener('input', (e) => {
+      if (this.currentMode === 'attack'){
+        // handled via keydown below; keep the field empty
+        this.hiddenInput.value = '';
+        return;
+      }
+      if (!this.currentEngine) return;
+      const previous = this.currentEngine.typed;
+      const incoming = e.target.value;
+      let feedback = null;
+      if (incoming.length > previous.length){
+        const added = incoming.slice(previous.length);
+        const isCorrect = [...added].every((char, offset) =>
+          char === this.currentEngine.target[previous.length + offset]
+        );
+        feedback = {
+          key: added.length === 1 ? added : '+' + added.length,
+          success: isCorrect,
+          strong: added === ' '
+        };
+      } else if (incoming.length < previous.length){
+        feedback = { key: '⌫', success: true, strong: false };
+      }
+      const corrected = this.currentEngine.handleInputValue(e.target.value);
+      if (corrected !== e.target.value) this.hiddenInput.value = corrected;
+      if (feedback) this.pulseFeedback(feedback.key, feedback.success, feedback.strong);
+    });
+
+    this.hiddenInput.addEventListener('keydown', (e) => {
+      if (this.currentMode === 'attack' && this.attackEngine && this.attackEngine.running){
+        if (e.key.length === 1){
+          const result = this.attackEngine.handleChar(e.key);
+          if (result){
+            this.pulseFeedback(e.key, result !== 'miss', result === 'destroyed');
+            if (result === 'destroyed') this.audio.shot();
+          }
+        }
+      }
+    });
+
+    document.addEventListener('pointerdown', (e) => {
+      this.audio.unlock();
+      if (!this.currentMode) this.audio.playMusic();
+      if (e.target.closest('button')){
+        if (navigator.vibrate) navigator.vibrate(8);
+        if (!e.target.closest('.mode-card')) this.audio.ui('tap');
+      }
+    });
+
+    document.addEventListener('keydown', () => {
+      this.audio.unlock();
+      if (!this.currentMode) this.audio.playMusic();
+    }, { capture:true });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  window.app = new App();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+TYPE HEIST MENU MUSIC
+
+Track: Spy
+Artist: Pumpupthemind
+Source: https://pixabay.com/music/funk-spy-166618/
+License: Pixabay Content License
+License summary: https://pixabay.com/service/license-summary/
+Downloaded: 2026-09-08
+
+The in-game interface includes this attribution as requested by the artist.
