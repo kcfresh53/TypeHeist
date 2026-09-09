@@ -867,6 +867,16 @@ body.feedback-miss #app{ animation:app-jolt .18s steps(2,end); }
 }
 .audio-dock button[aria-pressed="false"]{ color:var(--cream-dim); border-color:var(--edge); box-shadow:none; }
 .audio-dock button:hover,.audio-dock button:focus-visible{ background:var(--yellow); color:var(--black); }
+.arrow-selected{
+  outline:3px solid var(--cream) !important;
+  outline-offset:4px !important;
+  filter:brightness(1.12);
+}
+.pill-btn.arrow-selected,.reset-btn.arrow-selected,.results-actions button.arrow-selected,.start-overlay button.arrow-selected{
+  box-shadow:0 0 0 3px var(--black),0 0 0 7px var(--yellow);
+}
+.back-btn.arrow-selected{ box-shadow:0 0 0 3px var(--yellow),7px 7px 0 var(--cream); }
+.audio-dock button.arrow-selected,.track-now.arrow-selected{ outline-color:var(--yellow) !important; }
 .track-now{
   max-width:260px;
   overflow:hidden;
@@ -1692,6 +1702,7 @@ class App {
 
     this.bindAudioControls();
     this.bindMenu();
+    this.bindArrowNavigation();
     this.bindTypingScreen();
     this.bindAttackScreen();
     this.bindGlobalInput();
@@ -1768,7 +1779,16 @@ class App {
 
   focusInput(){
     this.hiddenInput.value = '';
+    document.querySelectorAll('.arrow-selected').forEach(el => el.classList.remove('arrow-selected'));
     this.hiddenInput.focus({ preventScroll: true });
+  }
+
+  restoreInputFocus(){
+    this.hiddenInput.value = this.currentMode === 'attack'
+      ? ''
+      : (this.currentEngine ? this.currentEngine.typed : '');
+    document.querySelectorAll('.arrow-selected').forEach(el => el.classList.remove('arrow-selected'));
+    this.hiddenInput.focus({ preventScroll:true });
   }
 
   /* ---------- menu ---------- */
@@ -1777,25 +1797,6 @@ class App {
     this.menuCards.forEach((card, index) => {
       card.addEventListener('focus', () => this.selectMenuCard(index, false));
       card.addEventListener('click', () => this.startMode(card.dataset.mode));
-    });
-
-    document.addEventListener('keydown', (e) => {
-      if (this.currentMode || !['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Home','End'].includes(e.key)) return;
-      e.preventDefault();
-      const singleColumn = window.matchMedia('(max-width: 640px)').matches;
-      const direction = {
-        ArrowLeft: -1,
-        ArrowRight: 1,
-        ArrowUp: singleColumn ? -1 : -2,
-        ArrowDown: singleColumn ? 1 : 2
-      }[e.key];
-
-      let next = this.menuIndex;
-      if (e.key === 'Home') next = 0;
-      else if (e.key === 'End') next = this.menuCards.length - 1;
-      else if (next < 0) next = direction < 0 ? this.menuCards.length - 1 : 0;
-      else next = (next + direction + this.menuCards.length) % this.menuCards.length;
-      this.selectMenuCard(next, true);
     });
   }
 
@@ -1806,6 +1807,101 @@ class App {
       this.audio.ui('navigate');
       this.menuCards[index].focus({ preventScroll: true });
     }
+  }
+
+  getArrowTargets(){
+    const overlay = document.querySelector('.results-overlay');
+    const activeScreen = this.currentMode === 'attack'
+      ? this.screens.attack
+      : (this.currentMode ? this.screens.typing : this.screens.menu);
+    const scopes = overlay
+      ? [overlay]
+      : [document.querySelector('.audio-dock'), activeScreen];
+    const seen = new Set();
+
+    return scopes.flatMap(scope => scope ? [...scope.querySelectorAll('button:not([disabled]), a[href]')] : [])
+      .filter(el => {
+        if (seen.has(el)) return false;
+        seen.add(el);
+        const rect = el.getBoundingClientRect();
+        const style = getComputedStyle(el);
+        return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden';
+      });
+  }
+
+  focusArrowTarget(target, withSound = true){
+    if (!target) return;
+    document.querySelectorAll('.arrow-selected').forEach(el => el.classList.remove('arrow-selected'));
+    target.classList.add('arrow-selected');
+    target.focus({ preventScroll:true });
+    target.scrollIntoView({ block:'nearest', inline:'nearest', behavior:'smooth' });
+    if (withSound) this.audio.ui('navigate');
+  }
+
+  bindArrowNavigation(){
+    const keyVectors = {
+      ArrowLeft:  [-1, 0],
+      ArrowRight: [1, 0],
+      ArrowUp:    [0, -1],
+      ArrowDown:  [0, 1]
+    };
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.currentMode && !document.querySelector('.results-overlay')){
+        e.preventDefault();
+        this.restoreInputFocus();
+        return;
+      }
+
+      if (!keyVectors[e.key] && e.key !== 'Home' && e.key !== 'End') return;
+      const targets = this.getArrowTargets();
+      if (!targets.length) return;
+      e.preventDefault();
+
+      if (e.key === 'Home' || e.key === 'End'){
+        this.focusArrowTarget(e.key === 'Home' ? targets[0] : targets[targets.length - 1]);
+        return;
+      }
+
+      const current = targets.includes(document.activeElement) ? document.activeElement : null;
+      if (!current){
+        const preferred = [
+          '.results-actions button',
+          '.pill-btn.active',
+          '.start-overlay:not(.hidden) button',
+          '.mode-card.menu-selected',
+          '.mode-card',
+          '.screen:not(.hidden) .back-btn'
+        ].map(selector => document.querySelector(selector))
+          .find(el => targets.includes(el));
+        this.focusArrowTarget(preferred || targets[0]);
+        return;
+      }
+
+      const [vx, vy] = keyVectors[e.key];
+      const currentRect = current.getBoundingClientRect();
+      const cx = currentRect.left + currentRect.width / 2;
+      const cy = currentRect.top + currentRect.height / 2;
+      const scored = targets.filter(el => el !== current).map(el => {
+        const rect = el.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+        const primary = (x - cx) * vx + (y - cy) * vy;
+        const cross = Math.abs((x - cx) * vy - (y - cy) * vx);
+        return { el, primary, cross, score: primary + cross * 2.25 };
+      });
+
+      let candidates = scored.filter(item => item.primary > 4);
+      if (!candidates.length){
+        const furthestBehind = Math.min(...scored.map(item => item.primary));
+        candidates = scored.map(item => ({
+          ...item,
+          score: Math.abs(item.primary - furthestBehind) * 3 + item.cross
+        }));
+      }
+      candidates.sort((a, b) => a.score - b.score);
+      this.focusArrowTarget(candidates[0]?.el);
+    });
   }
 
   goToMenu(){
@@ -1963,7 +2059,7 @@ class App {
     return 'D';
   }
   rankForScore(score){
-    if (score >= 4000) return 'S';
+    if (score >= 20000) return 'S';
     if (score >= 2500) return 'A';
     if (score >= 1200) return 'B';
     if (score >= 400) return 'C';
@@ -2013,6 +2109,7 @@ class App {
       overlay.remove();
       this.goToMenu();
     });
+    requestAnimationFrame(() => this.focusArrowTarget(overlay.querySelector('#resultsRetry'), false));
   }
 
   /* ---------- attack mode ---------- */
@@ -2040,6 +2137,7 @@ class App {
       dangerEl: document.getElementById('attackDangerMsg')
     });
     this.attackEngine.onGameOver = (stats) => this.showResults('WORD ATTACK', stats, this.rankForScore(stats.score));
+    setTimeout(() => this.focusArrowTarget(document.getElementById('attackStartBtn'), false), 180);
   }
 
   beginAttackRun(){
@@ -2051,8 +2149,8 @@ class App {
   /* ---------- global input plumbing ---------- */
   bindGlobalInput(){
     // Keep the hidden input focused whenever we are on a game screen.
-    document.addEventListener('click', () => {
-      if (this.currentMode) this.hiddenInput.focus({ preventScroll: true });
+    document.addEventListener('click', (e) => {
+      if (this.currentMode && !e.target.closest('.results-overlay')) this.restoreInputFocus();
     });
 
     this.hiddenInput.addEventListener('beforeinput', (e) => {
