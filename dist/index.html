@@ -751,6 +751,24 @@ body::after{
 }
 .falling-word.targeted{ color:var(--cream); border-color:var(--yellow); box-shadow:6px 6px 0 var(--yellow); transform:scale(1.06) rotate(-1deg); }
 .falling-word .typed{ background:var(--yellow); color:var(--black); }
+.falling-word .drop-badge{
+  margin-right:7px;
+  padding:1px 4px;
+  color:var(--black);
+  background:var(--yellow);
+  font-size:.66rem;
+  font-weight:800;
+  letter-spacing:.04em;
+}
+.falling-word.health-drop{ border-color:#58ee88; color:#baffcd; box-shadow:4px 4px 0 #174d2a; }
+.falling-word.health-drop .drop-badge,.falling-word.health-drop .typed{ background:#58ee88; }
+.falling-word.health-drop.targeted{ box-shadow:6px 6px 0 #58ee88,0 0 18px rgba(88,238,136,.32); }
+.falling-word.bonus-drop{ border-color:var(--yellow-hi); color:var(--yellow-hi); box-shadow:4px 4px 0 var(--yellow-dim); }
+.falling-word.bonus-drop .drop-badge{ background:var(--yellow-hi); }
+.falling-word.bonus-drop.targeted{ box-shadow:6px 6px 0 var(--yellow-hi),0 0 22px rgba(255,240,106,.4); }
+.falling-word.slow-drop{ border-color:#61d9ff; color:#bcefff; box-shadow:4px 4px 0 #164c62; }
+.falling-word.slow-drop .drop-badge,.falling-word.slow-drop .typed{ background:#61d9ff; }
+.falling-word.slow-drop.targeted{ box-shadow:6px 6px 0 #61d9ff,0 0 20px rgba(97,217,255,.35); }
 .falling-word.shot{ animation:word-shot .24s steps(2,end) forwards; }
 @keyframes word-shot{
   0%{ transform:scale(1.06) rotate(-1deg); filter:none; }
@@ -788,12 +806,35 @@ body::after{
   pointer-events:none;
   animation:impact-pop .34s cubic-bezier(.1,.85,.2,1) forwards;
 }
-.shot-impact::after{ content:'HIT!'; transform:rotate(-8deg); text-shadow:2px 2px 0 var(--cream); }
+.shot-impact::after{ content:attr(data-label); transform:rotate(-8deg); text-shadow:2px 2px 0 var(--cream); }
+.shot-impact.impact-health{ background:#58ee88; width:126px; height:126px; }
+.shot-impact.impact-bonus{ background:var(--yellow-hi); width:132px; height:132px; }
+.shot-impact.impact-slow{ background:#61d9ff; width:126px; height:126px; }
 @keyframes impact-pop{
   0%{ transform:translate(-50%,-50%) scale(.15) rotate(-25deg); opacity:0; }
   38%{ transform:translate(-50%,-50%) scale(1.2) rotate(7deg); opacity:1; }
   100%{ transform:translate(-50%,-50%) scale(1.7) rotate(14deg); opacity:0; }
 }
+.attack-wrap.low-health{ animation:low-health-pulse 1.25s ease-in-out infinite; }
+.attack-wrap.low-health .playfield{ animation:low-health-inset 1.25s ease-in-out infinite; }
+@keyframes low-health-pulse{
+  0%,100%{ filter:drop-shadow(0 0 2px rgba(255,38,38,.25)); }
+  50%{ filter:drop-shadow(0 0 17px rgba(255,38,38,.72)); border-color:#ff3d32; }
+}
+@keyframes low-health-inset{
+  0%,100%{ box-shadow:inset 0 0 10px rgba(255,24,24,.08); }
+  50%{ box-shadow:inset 0 0 32px rgba(255,24,24,.28); }
+}
+.playfield.time-slow{ animation:time-slow-field 1s ease-in-out infinite; border-color:#61d9ff; }
+@keyframes time-slow-field{
+  0%,100%{ box-shadow:inset 0 0 8px rgba(97,217,255,.08); }
+  50%{ box-shadow:inset 0 0 28px rgba(97,217,255,.22); }
+}
+.powerup-legend{ display:flex; flex-wrap:wrap; justify-content:center; gap:8px 14px; }
+.powerup-legend span{ font-family:'JetBrains Mono',monospace; font-size:.84rem; font-weight:700; }
+.powerup-legend .health-key{ color:#58ee88; }
+.powerup-legend .bonus-key{ color:var(--yellow-hi); }
+.powerup-legend .slow-key{ color:#61d9ff; }
 .attack-footer{ color:var(--cream); text-transform:uppercase; letter-spacing:.06em; }
 .start-overlay{ background:rgba(7,7,5,.94); }
 .start-overlay h3{ font-size:clamp(2.2rem,6vw,4.5rem); transform:skew(-7deg) rotate(-2deg); text-shadow:4px 4px 0 var(--cream); }
@@ -1019,6 +1060,7 @@ body.feedback-miss #app{ animation:app-jolt .18s steps(2,end); }
         <div class="start-overlay" id="attackStartOverlay">
           <h3>Words are inbound</h3>
           <p>Type any falling word to lock on. Finish it before it crosses your line, or your HP takes the hit.</p>
+          <p class="powerup-legend"><span class="health-key">+HP repairs</span><span class="bonus-key">× score jackpot</span><span class="slow-key">SLOW bends time</span></p>
           <button id="attackStartBtn">BEGIN ASSAULT</button>
         </div>
       </div>
@@ -1099,6 +1141,7 @@ const HEIST_SENTENCES = [
 ];
 
 const ATTACK_WORDS = WORD_BANK.filter(w => w.length >= 3 && w.length <= 8);
+const ATTACK_LONG_WORDS = WORD_BANK.filter(w => w.length >= 9 && w.length <= 12);
 const BATCH_WORD_COUNT = 25;
 
 function generateWordString(count){
@@ -1258,6 +1301,17 @@ class AudioDirector {
     this.noise(.13, .2);
     this.tone(150, .16, 'sawtooth', .2, 0, 48);
     this.tone(880, .07, 'square', .1, .025, 240);
+  }
+
+  powerup(kind){
+    if (kind === 'health'){
+      [392, 523, 659].forEach((freq, i) => this.tone(freq, .13, 'sine', .08, i * .045));
+    } else if (kind === 'bonus'){
+      [440, 660, 880, 1320].forEach((freq, i) => this.tone(freq, .09, 'square', .055, i * .035));
+    } else if (kind === 'slow'){
+      this.tone(720, .35, 'sine', .1, 0, 180);
+      this.tone(360, .42, 'triangle', .07, .05, 90);
+    }
   }
 
   result(){
@@ -1463,6 +1517,7 @@ class AttackMode {
     this.health = 100;
     this.score = 0;
     this.combo = 0;
+    this.maxCombo = 0;
     this.wave = 1;
     this.currentTargetId = null;
     this.running = false;
@@ -1472,6 +1527,10 @@ class AttackMode {
     this.spawnInterval = 2200;
     this.baseSpeed = 34; // px/sec
     this.elapsed = 0;
+    this.slowUntil = 0;
+    this.slowTimeout = null;
+    this.lastDestroyType = 'normal';
+    this.wrapEl = this.playfieldEl.closest('.attack-wrap');
 
     this.onGameOver = () => {};
   }
@@ -1485,6 +1544,9 @@ class AttackMode {
   stop(){
     this.running = false;
     if (this.rafId) cancelAnimationFrame(this.rafId);
+    clearTimeout(this.slowTimeout);
+    this.playfieldEl.classList.remove('time-slow');
+    this.wrapEl?.classList.remove('low-health');
     this.words.forEach(w => w.el.remove());
     this.words = [];
   }
@@ -1518,8 +1580,9 @@ class AttackMode {
     const fieldHeight = this.playfieldEl.clientHeight;
     const baselineY = fieldHeight - 46;
 
+    const speedScale = performance.now() < this.slowUntil ? .46 : 1;
     for (const w of this.words.slice()){
-      w.y += w.speed * dt;
+      w.y += w.speed * dt * speedScale;
       w.el.style.top = w.y + 'px';
       if (w.y >= baselineY){
         this.missWord(w);
@@ -1528,21 +1591,40 @@ class AttackMode {
   }
 
   spawnWord(){
-    const text = Utils.pick(ATTACK_WORDS);
+    const roll = Math.random();
+    const healthChance = this.health < 100 ? .055 + ((100 - this.health) / 100) * .045 : 0;
+    const bonusChance = this.wave >= 3 ? Math.min(.19, .07 + (this.wave - 3) * .02) : 0;
+    const slowChance = this.wave >= 2 ? .04 : 0;
+    let kind = 'normal';
+    if (roll < healthChance) kind = 'health';
+    else if (roll < healthChance + bonusChance) kind = 'bonus';
+    else if (roll < healthChance + bonusChance + slowChance) kind = 'slow';
+
+    const text = Utils.pick(kind === 'normal' ? ATTACK_WORDS : ATTACK_LONG_WORDS);
+    const bonusMultiplier = kind === 'bonus' ? Math.min(5, 2 + Math.floor((this.wave - 3) / 2)) : 1;
+    const badge = kind === 'health' ? '+HP' : kind === 'bonus' ? '×' + bonusMultiplier : kind === 'slow' ? 'SLOW' : '';
     const el = document.createElement('div');
     el.className = 'falling-word';
-    el.innerHTML = '<span class="typed"></span><span class="rest">' + text + '</span>';
+    if (kind !== 'normal') el.classList.add(kind + '-drop');
+    el.innerHTML = (badge ? '<span class="drop-badge">' + badge + '</span>' : '') + '<span class="typed"></span><span class="rest">' + text + '</span>';
     const fieldWidth = this.playfieldEl.clientWidth;
-    const left = Utils.randInt(20, Math.max(20, fieldWidth - 100));
-    el.style.left = left + 'px';
     this.playfieldEl.appendChild(el);
+    const left = Utils.randInt(20, Math.max(20, fieldWidth - el.offsetWidth - 20));
+    el.style.left = left + 'px';
+
+    let speed = this.baseSpeed * Utils.clamp(1 + (0.5 - text.length / 20), 0.7, 1.3);
+    if (kind === 'bonus') speed *= 1.18 + Math.min(.25, Math.max(0, this.wave - 3) * .025);
+    else if (kind === 'health') speed *= .92;
+    else if (kind === 'slow') speed *= 1.05;
 
     const word = {
       id: this.nextId++,
       text,
+      kind,
+      bonusMultiplier,
       progress: 0,
       y: -30,
-      speed: this.baseSpeed * Utils.clamp(1 + (0.5 - text.length / 20), 0.7, 1.3),
+      speed,
       el
     };
     this.words.push(word);
@@ -1616,6 +1698,8 @@ class AttackMode {
 
     const impact = document.createElement('div');
     impact.className = 'shot-impact';
+    if (word.kind !== 'normal') impact.classList.add('impact-' + word.kind);
+    impact.dataset.label = word.effectLabel || 'HIT!';
     impact.style.left = endX + 'px';
     impact.style.top = endY + 'px';
 
@@ -1624,15 +1708,41 @@ class AttackMode {
   }
 
   destroyWord(word){
+    const comboMultiplier = Math.max(1, Math.floor((this.combo + 1) / 5) + 1);
+    let points = word.text.length * 10 * comboMultiplier;
+    if (word.kind === 'bonus'){
+      points *= word.bonusMultiplier;
+      word.effectLabel = '×' + word.bonusMultiplier + ' JACKPOT';
+      this.flashDanger('bonus', word.bonusMultiplier);
+    } else if (word.kind === 'health'){
+      const healed = Math.min(18, 100 - this.health);
+      this.health += healed;
+      word.effectLabel = healed ? '+' + healed + ' HP' : 'HP FULL';
+      this.updateHealth();
+      this.flashDanger('health', healed);
+    } else if (word.kind === 'slow'){
+      this.activateSlowField();
+      word.effectLabel = 'TIME SLOW';
+      this.flashDanger('slow');
+    }
     this.createShotEffect(word);
     this.words = this.words.filter(w => w.id !== word.id);
     if (this.currentTargetId === word.id) this.currentTargetId = null;
     this.combo++;
-    this.score += word.text.length * 10 * Math.max(1, Math.floor(this.combo / 5) + 1);
+    this.maxCombo = Math.max(this.maxCombo, this.combo);
+    this.score += points;
     this.scoreEl.textContent = String(this.score);
     this.comboEl.textContent = String(this.combo);
+    this.lastDestroyType = word.kind;
     word.el.classList.add('shot');
     setTimeout(() => word.el.remove(), 360);
+  }
+
+  activateSlowField(){
+    this.slowUntil = performance.now() + 4000;
+    this.playfieldEl.classList.add('time-slow');
+    clearTimeout(this.slowTimeout);
+    this.slowTimeout = setTimeout(() => this.playfieldEl.classList.remove('time-slow'), 4000);
   }
 
   missWord(word){
@@ -1654,17 +1764,25 @@ class AttackMode {
   updateHealth(){
     this.healthFillEl.style.width = this.health + '%';
     this.healthFillEl.classList.toggle('danger', this.health <= 30);
+    this.wrapEl?.classList.toggle('low-health', this.health <= 30);
   }
 
-  flashDanger(kind){
-    this.dangerEl.textContent = kind === 'hit' ? 'hull breach!' : 'no match';
+  flashDanger(kind, value){
+    const messages = {
+      hit: 'hull breach!',
+      miss: 'no match',
+      health: '+' + value + ' hp recovered',
+      bonus: 'jackpot ×' + value,
+      slow: 'time distortion active'
+    };
+    this.dangerEl.textContent = messages[kind] || '';
     clearTimeout(this._dangerTimeout);
     this._dangerTimeout = setTimeout(() => { this.dangerEl.textContent = ''; }, 700);
   }
 
   gameOver(){
     this.stop();
-    this.onGameOver({ score: this.score, wave: this.wave, combo: this.combo });
+    this.onGameOver({ score: this.score, wave: this.wave, maxCombo: this.maxCombo });
   }
 }
 
@@ -2109,7 +2227,7 @@ class App {
       statsHtml =
         '<div><div class="v">' + stats.score + '</div><div class="l">score</div></div>' +
         '<div><div class="v">' + stats.wave + '</div><div class="l">wave</div></div>' +
-        '<div><div class="v">' + stats.combo + '</div><div class="l">max combo</div></div>';
+        '<div><div class="v">' + (stats.maxCombo ?? stats.combo ?? 0) + '</div><div class="l">max combo</div></div>';
     }
 
     overlay.innerHTML =
@@ -2221,7 +2339,10 @@ class App {
           const result = this.attackEngine.handleChar(e.key);
           if (result){
             this.pulseFeedback(e.key, result !== 'miss', result === 'destroyed');
-            if (result === 'destroyed') this.audio.shot();
+            if (result === 'destroyed'){
+              this.audio.shot();
+              if (this.attackEngine.lastDestroyType !== 'normal') this.audio.powerup(this.attackEngine.lastDestroyType);
+            }
           }
         }
       }
